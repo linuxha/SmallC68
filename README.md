@@ -1,14 +1,14 @@
 # SmallC68XX - Small C for the Motorola 68XX family under Linux 
 
-Ron Cain's 1.1 Small C compiler for the 6800, 6801, 6803 and 6809. Maybe the 68HC11.
+Ron Cain's 1.1 Small C compiler for the 6800, 6801, 6803 and 6809. Maybe the 68HC11. The original Author of the Flex port is S. Stepanoff
 
-Originally these were Flex OS Compilers but I'm not certain if they're for the 6800 or 6809 versions of Flex. My intention is to set them up to work on Linux as a cross-compiler.
+Originally these were Flex OS Compilers but I think I can make this work under Linux and the output code should be OS agnotic. My intention is to set them up to work on Linux as a cross-compiler.
 
 # Notes
 
 After reading and poking around the Flex Small C Compiler DSK images I've guessed that these are Ron Cain's Small C V1.1 compiler and that the runXX (00,01,09) are the runtime files that take the psuedo code and make it understandable (assemble) under Flex.
 
-The ccx.c files is the smallc.c file broken into 9 sections so the small C compiler can compile itself on Flex. Since I'll be using Linux to cros compile. I'll not include this files.
+The ccx.c files is the smallc.c file broken into 9 sections so the small C compiler can compile itself on Flex. Since I'll be using Linux to cross compile. I'll not include this files.
 
 ```
 cc0.c
@@ -40,6 +40,8 @@ run9.c
 smallc.c
 ```
 
+2023/02/04 - I've got the compiler hacked together and mostly working. What I've found is that the small c compiler outputs pseudo code and that the run9 (6809) and run1 (6801) code are the asm source to an interpreter. Assemble the code together and you have a program. This small C compiler is still quite limitted but may be useful and as one of the notes files points out C is easier to write than asm code. Anyway I'm posting this mess so I don't lose it and so other might get ideas. Just note that this is terrible C code. It was meant to use the very limmited small c compiler to compile itself. I'm in the process of making it work under Linux as a cross compiler for any of the Motorola preocessors. It will no longer compiler itself.
+
 # License
 
-For the moment I've selected LGPL 2.1, I'm not certain I can do this as the previous programmers had different licenses. 
+For the moment I've selected LGPL 2.1, I'm not certain I can do this as the previous programmers had different licenses. I'll adjust as needed.
