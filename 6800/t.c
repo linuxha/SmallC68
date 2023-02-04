@@ -4,9 +4,12 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <stdint.h>
+
 int sub(int c) {
     return(isalpha(c));
 }
+
 void
 main() {
     int c = 'a', c1 = 0;
@@ -29,5 +32,14 @@ main() {
     printf("sizeof(Int)    = %d\n", sizeof(int));
     printf("sizeof(Int *)  = %d\n", sizeof(int *));
     printf("sizeof(long)   = %d\n", sizeof(long));
-    printf("sizeof(long *) = %d\n", sizeof(long ));
+    printf("sizeof(long *) = %d\n", sizeof(long *));
+
+    printf("sizeof(uint8_t)    = %d\n", sizeof(uint8_t));
+    printf("sizeof(uint8_t *)  = %d\n", sizeof(uint8_t *));
+    printf("sizeof(uint16_t)   = %d\n", sizeof(uint16_t));
+    printf("sizeof(uint16_t *) = %d\n", sizeof(uint16_t *));
+    printf("sizeof(uint32_t)   = %d\n", sizeof(uint32_t));
+    printf("sizeof(uint32_t *) = %d\n", sizeof(uint32_t *));
+    printf("sizeof(uint64_t)   = %d\n", sizeof(uint64_t));
+    printf("sizeof(uint64_t *) = %d\n", sizeof(uint64_t *));
 }
