@@ -1,30 +1,25 @@
 #asm
-        NAM  SMALL-C RUN PACK FOR 6809
+        NAM  SMALL-C RUN PACK FOR 6801/6301
 
-;*   LAST UPDATE   18-JAN-84
+RAM     EQU  $1000
+ROM     EQU  $F000
 
-ROM     EQU  $8000
-RAM     EQU  $9000
-WARMS   EQU  $CD03
+;*   LAST UPDATE   16-JAN-84
 
-        ORG  RAM
-
+        ORG  $80
+;*
 PPC     RMB  2                  ;* PSEUDO PROGRAM COUNTER
 R1A     RMB  1                  ;* WORKING 16 BIT
 R1B     RMB  1                  ;* --REGISTER
 DFLAG   RMB  1                  ;* DIVIDE ROUTINE FLAG
-
-RAM     SET  *
+STEMP   RMB  2                  ;* TEMP STORAGE FOR STACK POINTER
 
 ;***************************************************
 
- 	SETDP RAM/256
-
  	ORG  ROM
 
-RUN     LDS  $CC2B
-        LDA  #RAM/256
-        TFR  A,DP
+RUN     LDS  #$FF
+        STS  STEMP
         LDX  #CODE
         BRA  NEXT2              ;* START THE INTERPRETATION
 
@@ -33,19 +28,20 @@ RUN     LDS  $CC2B
 ;*  THE HEART OF THE INTERPRETER--- NEXT INSTRUCTION FETCHER.
 ;*
 BUMP2   LDX  PPC                ;* GET PROG COUNTER
-        LEAX 2,X                ;* INCR BY 2
+BUMP2A  INX  INCR               ;* BY 2
+        INX
         BRA  NEXT1              ;* FETCH NEXT INSTRUCTION
 
 NEXT    LDX  PPC
 NEXT1   STD  R1A                ;* SAVE THE WORK
-NEXT2   BRA  *+3                ;* ROOM FOR TRACE
-        NOP
-        LDB  ,X+                ;* GET THE PSEUDO-INSTRUCTION
+NEXT2   LDAB 0,X                ;* GET THE PSEUDO-INSTRUCTION
+        INX                     ;* (B CONTAINS A TABLE OFFSET)
         STX  PPC                ;* SAVE NEW PPC
-        LEAX JTABLE,PCR         ;* POINT TO ROUTINE (PC Relative)
+        LDX  #JTABLE            ;* POINT TO ROUTINE
         ABX
-        LDB  R1B
-        JMP  [0,X]              ;* GO EXECUTE THE PSEUDO-INSTR.
+        LDAB R1B
+        LDX  0,X
+        JMP  0,X                ;* GO EXECUTE THE PSEUDO-INSTR.
 
 ;**************************************************************
 ;*                  THE JUMP TABLE                            *
@@ -99,76 +95,104 @@ JTABLE  FDB  LD1IM              ;* #0  LOAD REG WITH IMMED. VALUE
 ;*************************************************************
 ;*-------------------------
 ;* #0 LOAD REG WITH IMMED. VALUE
-LD1IM   LDD  [PPC]
-        BRA  BUMP2
+LD1IM   LDX  PPC
+        LDD  0,X                ;* HIGH BYTE
+        JMP  BUMP2A
 
 ;*-------------------------
 ;* #1 LOAD STACK ADDRESS + OFFSET INTO REG
-LD1SOFF TFR S,D
-        ADDD [PPC]
-        BRA  BUMP2
+LD1SOFF TSX
+        STX  R1A                ;* SAVE STACK VALUE
+        LDX  PPC                ;*
+        LDD  0,X                ;* GET OFFSET
+        ADDD R1A                ;* ADD OFFSET
+        JMP  BUMP2A
 
 ;*-------------------------
 ;* #2  LOAD WORD @ ADDRESS
 LD1     LDX  PPC
-        LDD  [,X]               ;* GET WORD
+        LDX  0,X                ;* GET ADDRESS
+LD1A    LDD  0,X                ;* GET WORD
         JMP  BUMP2
 
 ;*-------------------------
 ;* #3  LOAD BYTE @ ADDRESS
 LDB1    LDX  PPC
-        LDAB [,X]               ;* GET BYTE
-        SEX                     ;* SIGN EXTEND
-        JMP  BUMP2
+        LDX  0,X                ;* GET ADDRESS
+        CLRA
+        LDAB 0,X                ;* GET BYTE
+        BPL  LDB1A
+        COMA                    ;* SIGN EXTEND
+LDB1A   JMP  BUMP2
 
 ;*-------------------------
 ;* #4  LOAD WORD INDIRECT (ADDR IN REG)
-LD1R    LDD  [R1A]              ;* GET WORD
+LD1R    LDX  R1A                ;* GET ADDRESS
+        LDD  0,X                ;* GET WORD
         JMP  NEXT
 
 ;*-------------------------
 ;* #5  LOAD BYTE INDIRECT (ADDR IN REG)
-LDB1R   LDB  [R1A]
-        SEX
-        JMP  NEXT
+LDB1R   LDX  R1A
+        CLRA
+        LDAB 0,X                ;* GET BYTE
+        BPL  LDB1RA
+        COMA
+LDB1RA  JMP  NEXT
 
 ;*-------------------------
 ;* #6  STORE WORD @ ADDRESS
-ST1     STD  [PPC]
+ST1     LDX  PPC
+        LDX  0,X                 ;* GET ADDRESS
+        STD  0,X                 ;* STORE WORD
         JMP  BUMP2
 
 ;*-------------------------
 ;* #7  STORE BYTE @ ADDRESS
-STB1    STB  [PPC]
+STB1    LDX  PPC
+        LDX  0,X                ;* GET ADDR
+        STAB 0,X                ;* STORE BYTE
         JMP  BUMP2
 
 ;*-------------------------
 ;* #8  STORE WORD @ ADDRESS ON STACK
-ST1SP   STD  [,S++]
+ST1SP   TSX                     ;* STACK TO INDEX
+        LDX  0,X                ;* GET ADDRESS
+        STD  0,X                ;* STORE WORD
+        INS
+        INS                     ;* POP STACK
         JMP  NEXT
 
 ;*-------------------------
 ;* #9  STORE BYTE @ ADDRESS ON STACK
-STB1SP  STB  [,S++]
+STB1SP  TSX
+        LDX  0,X
+        STAB 0,X                ;* STORE BYTE
+        INS                     ;* POP ...
+        INS
         JMP  NEXT
 
 ;*-------------------------
 ;* #10  PUSH WORD ON STACK
-PUSHR1  PSHS D
+PUSHR1  PSHB
+        PSHA
         LDX  PPC
         JMP  NEXT2
 
 ;*-------------------------
 ;* #11  SWAP REG AND TOP OF STACK
-EXG1    PULS X
-        EXG  D,X
-        PSHS X
+EXG1    PULX
+        STX  R1A                ;* SAVE
+        PSHB
+        PSHA REG                ;* ON STACK
+        LDD  R1A                ;* NEW REG
         LDX  PPC
         JMP  NEXT2
 
 ;*-------------------------
 ;* #12  JUMP TO LABEL
-JMPL    LDX  [PPC]
+JMPL    LDX  PPC
+JMP1    LDX  0,X                ;* GET ADDRESS (NEW PPC)
         JMP  NEXT2
 
 ;*-------------------------
@@ -180,28 +204,34 @@ BRZL    ORAA R1B                ;* SET FLAGS
 ;*-------------------------
 ;* #14  CALL TO LABEL
 JSRL    LDX  PPC
-        LEAX 2,X                ;* ADJUST RETURN ADDR
-        PSHS X                  ;* PUSH RETURN ADDRESS
+        INX                     ;* ADJUST RETURN
+        INX                     ;* -- ADDRESS
+        PSHX                    ;* PUSH RETURN ADDRESS
         BRA  JMPL
 
 ;*-------------------------
 ;* #15  CALL TO TOP OF STACK
-JSRSP   PULS X
+JSRSP   PULX
         LDD  PPC                ;* GET RETURN ADDRESS
-        PSHS D                  ;* SAVE RETURN ADDRESS
+        PSHB SAVE               ;* RETURN ADDRESS
+        PSHA
         JMP  NEXT2
 
 ;*-------------------------
 ;* #16  RETURN TO CALLER
-RTSC    PULS X                  ;* GET ADDRESS
+RTSC    PULX                    ;* GET ADDRESS
         JMP  NEXT1
 
 ;*-------------------------
 ;* #17  MODIFY THE STACK POINTER
-MODSP   LDD  [PPC]
-        LEAS D,S
+MODSP   LDX  PPC
+        LDD  0,X                ;* GET VALUE
+        STS  STEMP
+        ADDD STEMP              ;* ADD STACK POINTER
+        STD  STEMP
+        LDS  STEMP              ;* NEW STACK POINTER
         LDD  R1A                ;* RESTORE REGISTER
-        JMP  BUMP2
+        JMP  BUMP2A
 
 ;*---------------------------
 ;* #18  DOUBLE THE PRIMARY REGISTER
@@ -210,36 +240,43 @@ DBL1    ASLD
 
 ;*---------------------------
 ;* #19  ADD REG AND TOP OF STACK (THEN POP)
-ADDS    ADDD ,S++               ;* DO THE ADD
-        JMP  NEXT               ;* POP & RETURN
+ADDS    TSX
+        ADDD 0,X                ;* DO THE ADD
+        JMP  POPS               ;* POP & RETURN
 
 ;*---------------------------
 ;* #20  SUBTRACT REG FROM TOP OF STACK
-SUBFST  PULS D                  ;* GET VALUE OFF STACK
+SUBFST  PULA                    ;* GET VALUE OFF STACK
+        PULB
         SUBD R1A                ;* SUBTRACT REGISTER
         JMP  NEXT
 
 ;*---------------------------
 ;* #21  MULTIPLY TOP OF STACK BY REG (RESULT IN REG)
-MUL1    PSHS D
-        LDAA #16
+MUL1    PSHB
+        PSHA                    ;* REG ON STACK
+        LDAA #16                ;*
         PSHA                    ;* SET COUNTER
         CLRA
         CLRB
+        TSX                     ;* POINT TO DATA
 
-M2      ROR  3,S                ;* SHIFT MULTIPLIER
-        ROR  4,S
-        DEC  0,S                ;* DONE ?
+M2      ROR  3,X                 ;* SHIFT MULTIPLIER
+        ROR  4,X
+        DEC  0,X                ;* DONE ?
         BMI  M4
         BCC  M3
-        ADDD 1,S
+        ADDD 1,X
 
 M3      RORA
         RORB                    ;* SHIFT RESULT
         BRA  M2                 ;* AND LOOP
 
-M4      LEAS 3,S
-        PULS D                  ;* GET RESULT
+M4      INS                     ;* CLEAN STACK
+        INS
+        INS
+        PULA                    ;* GET RESULT
+        PULB
         JMP  NEXT
 
 ;*-----------------------------
@@ -247,24 +284,26 @@ M4      LEAS 3,S
 DIV1    BSR  BDIV               ;* DO THE BASIC DIVIDE
         LDAA DFLAG              ;* GET SIGN FLAG
         ANDA #1                 ;* MASK OFF BIT ZERO
-        PULS D                  ;* GET RESULT
+        PULA                    ;* GET RESULT
+        PULB
         BEQ  DIV1R
 
 DIV1N   BSR  NEGATE             ;* NEGATE THE VALUE IN A,B
 
-DIV1R   JMP  NEXT
+DIV1R   JMP NEXT
 
 ;*-----------------------------
 ;* #23  DIVIDE TOP OF STACK BY REG --- REMAINDER IN REG
 MOD     BSR  BDIV
-        LEAS 2,S                ;* CLEAN STACK
-        PSHS A                  ;* TEMP SAVE
-        LDA  DFLAG              ;* GET SIGN FLAG
+        INS                     ;* CLEAN STACK
+        INS
+        PSHA                    ;* TEMP SAVE
+        LDAA DFLAG              ;* GET SIGN FLAG
         BPL  MOD1
         COMA
 
 MOD1    ANDA #1                 ;* MASK OFF BIT 0
-        PULS A
+        PULA
         BNE  DIV1N              ;* IF BIT 0 SET, NEGATE
 
         JMP  NEXT
@@ -284,33 +323,38 @@ BDIV    CLR  DFLAG
         INC  DFLAG              ;* ADJUST SIGN FLAG
         BSR  NEGATE             ;* TAKE ABSOLUTE VALUE
 
-BDIV1   PSHS D                  ;* FORCE ON STACK
+BDIV1   PSHB                    ;* FORCE ON STACK
+        PSHA
         LDAA #17                ;* BIT COUNTER
         PSHA
-        LDD  5,S                ;* CHECK SIGN
+        TSX                     ;* POINT TO DATA
+        LDD  5,X                ;* CHECK SIGN
         BPL  BDIV2              ;* -- OF DIVIDEND
 
         COM  DFLAG              ;* ADJUST FLAG
         BSR  NEGATE
-        STD  5,S
+        STD  5,X
 
 BDIV2   CLRA
         CLRB
 
 ;* MAIN DIVIDE LOOP (UNSIGNED)
 
-UDIV1   CMPD 1,S
+UDIV1   CMPA 1,X
+        BHI  UDIV3
+        BCS  UDIV2
+        CMPB 2,X
         BCC  UDIV3
 
 UDIV2   CLC
         BRA  UDIV4
 
-UDIV3   SUBD 1,S
+UDIV3   SUBD 1,X
         SEC
 
-UDIV4   ROL  6,S
-        ROL  5,S
-        DEC  0,S
+UDIV4   ROL  6,X
+        ROL  5,X
+        DEC  0,X
         BEQ  UDIV5
 
         ROLB
@@ -318,7 +362,9 @@ UDIV4   ROL  6,S
         BCC  UDIV1
         BRA  UDIV3
 
-UDIV5   LEAS 3,S
+UDIV5   INS
+        INS
+        INS
         RTS
 
 ;*----------------------------------------
@@ -330,42 +376,50 @@ NEGATE  NEGA
 
 ;*----------------------------------
 ;* #24  INCLUSIVE OR THE TOP OF STACK AND REG.
-ORS     ORA  ,S+
-        ORB  ,S+
+ORS     TSX
+        ORAA 0,X
+        ORAB 1,X
+POPS    INS                     ;* POP THE STACK
+        INS
         JMP  NEXT
 
 ;*----------------------------------
 ;* #25  EXCLUSIVE OR ......
-XORS    EORA ,S+
-        EORB ,S+
-        JMP  NEXT
+XORS    TSX
+        EORA 0,X
+        EORB 1,X
+        BRA  POPS
 
 ;*----------------------------------
 ;* #26  AND .........
-ANDS    ANDA ,S+
-        ANDB ,S+
-        JMP  NEXT
+ANDS    TSX
+        ANDA 0,X
+        ANDB 1,X
+        BRA  POPS
 
 ;*----------------------------------
 ;* #27  ARITH. SHIFT RIGHT THE TOP OF STACK
-ASRS    ANDB #31                ;* MAX REASONABLE SHIFT
+ASRS    TSX
+        ANDB #$1F               ;* MAX REASONABLE SHIFT
         BEQ  ASRS2
 
-ASRS1   ASR  0,S
-        ROR  1,S
+ASRS1   ASR  0,X
+        ROR  1,X
         DECB
         BNE  ASRS1
 
-ASRS2   PULS D                  ;* GET THE RESULT
-        JMP NEXT
+ASRS2   PULA                    ;* GET THE RESULT
+        PULB
+        JMP  NEXT
 
 ;*--------------------------------
 ;* #28  ARITH. SHIFT LEFT THE TOP OF STACK
-ASLS    ANDB #31
+ASLS    TSX
+        ANDB #$1F
         BEQ  ASRS2
 
-ASLS1   ASL  1,S
-        ROL  0,S
+ASLS1   ASL  1,X
+        ROL  0,X
         DECB
         BNE  ASLS1
 
@@ -399,7 +453,8 @@ DECR    SUBD #1
 ;*
 ;*  Unsigned compare, Carry set if top of stack < A,B
 ;*
-BCMP    LDD  2,S                ;* GET TOP OF STACK
+BCMP    TSX
+        LDD  2,X                ;* GET TOP OF STACK
         SUBD R1A                ;* COMPARE
         RTS
 
@@ -463,27 +518,23 @@ UGT     BSR  BCMP
 UGE     BSR  BCMP
         BCC  TRUE
 
-FALSE   CLRB RETURN FALSE
+FALSE   CLRB                    ;* RETURN FALSE
         BRA  TRUE1
 
-TRUE    LDAB #1 RETURN TRUE
+TRUE    LDAB #1                 ;* RETURN TRUE
 
 TRUE1   CLRA
-        LEAS 2,S
-        JMP  NEXT
+        JMP                     ;* POPS POP STACK AND PROCEED
 
 ;*-------------------------------------
 ;* #43  SWITCH TO EXECUTABLE (ASSEMBLY) CODE
-ASMC    JMP  [PPC]              ;* EXECUTE CODE
+ASMC    LDX  PPC                ;* POINT TO CODE
+        JMP  0,X                ;* GO EXECUTE IT
 
-CODE    EQU  *
+WARMS 	BRA *
 
-        FCB  28                 ;* ASL
-        FDB  main
-        FCB  86                 ;* ???
-        JMP  WARMS
+CODE 	EQU *
 
 #endasm
 
-/* END of run-time package */
 /* -*- mode: asm-mode; -*- */

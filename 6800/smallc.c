@@ -493,7 +493,7 @@ newfunc() {
     }
 
     toconsole();
-    nl(); outstr("====== "); outstr(currfn+NAME); outstr("()");
+    nl(); outstr(";* ====== "); outstr(currfn+NAME); outstr("()\n");
     tofile();
 
     /* we had better see open paren for args... */
@@ -1515,7 +1515,8 @@ qstr(long val[]) {
 /* Begin a comment line for the assembler */
 void
 comment() {
-    outbyte('*');
+    //outbyte('*');
+    outstr(";* ");
 }
 
 /* Put out assembler info before any code is generated */
