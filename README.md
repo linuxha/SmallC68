@@ -6,6 +6,16 @@ Originally these were Flex OS Compilers but I think I can make this work under L
 
 # Notes
 
+```
+6800/ ..... Early version of the Flex OS Small C compiler (very limitted, v1.1 1982)
+silifen/ .. Later version of the Flex OS Small C compiler (has for(), etc v1.1 1985)
+v22/ ...... MSDOS version of the Small C compiler (outputs 8086 code)
+LICENSE ... Proposed License (I may need to change this)
+Makefile .. Ignore this, make files have moved their respective directories
+README.md . This file
+ccint.txt . Ignore this file (Small C interpreter used in 6800 version)
+
+```
 After reading and poking around the Flex Small C Compiler DSK images I've guessed that these are Ron Cain's Small C V1.1 compiler and that the runXX (00,01,09) are the runtime files that take the psuedo code and make it understandable (assemble) under Flex.
 
 The ccx.c files is the smallc.c file broken into 9 sections so the small C compiler can compile itself on Flex. Since I'll be using Linux to cross compile. I'll not include this files.
