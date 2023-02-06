@@ -1,0 +1,38 @@
+echo get files onto ramdisk (drive 1) from floppy (drive 2) for 6809 compilation
+contin
+echo get exec files for get01 goto1 goto9 goto91
+y copy 2.get01.txt 1
+y copy 2.goto1.txt 1
+y copy 2.goto9.txt 1
+y copy 2.goto91.txt 1
+echo get standard files
+echo copying stdio.h
+y copy 2.stdio.h 1
+echo copying ctype.h
+y copy 2.ctype.h 1
+echo copying libdef09.txt
+y copy 2.libdef09.txt 1
+echo copying libload9.txt
+y copy 2.libload9.txt 1
+echo switch to 6809 code generation
+y copy libdef09.txt libdef.txt
+y copy libload9.txt libload.txt
+echo copying libc09.txt
+y copy 2.libc09.txt 1
+echo copying libf09.txt
+y copy 2.libf09.txt 1
+echo copying libm09.txt
+y copy 2.libm09.txt 1
+echo copying libs09.txt
+y copy 2.libs09.txt 1
+echo copying liba09.txt
+y copy 2.liba09.txt 1
+echo copying libp.txt
+y copy 2.libp.txt 1
+echo get graphics if required
+contin
+echo copying plot.h
+y copy 2.plot.h 1
+echo copying libg09.txt
+y copy 2.libg09.txt 1
+echo now setup for 6809 use

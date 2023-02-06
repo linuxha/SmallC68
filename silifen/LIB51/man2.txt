@@ -1,0 +1,239 @@
+,pn 4
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Tutorial
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+
+`$1B,'!,24`
+,ce 2
+2. Tutorial
+
+`$1B,'!,8`
+,pp
+Before using the compiler your C program must be created using an editor. The standard FLEX line editor will do but care must be taken with some program lines which require a '#' at the start of a line. The editor uses '#' to mean end of insert mode so hashes must be edited into a file using the "change" editor command. There should be no problems if a screen editor such as screditor or stylograph is used. Care must be taken with stylograph to make sure that modified characters (superscript, underline etc.) are not inserted by accident. These are stored as control characters in the file and can cause problems during compilation.
+,pp
+To use the compiler the following files are required. On the system disk you will need the standard FLEX ASMB.CMD, the compiler CC.CMD and the optimiser OPT.CMD. On the work disk you will need the C program to be compiled (e.g. FILE.C), the header file STDIO.H and the library files. An EXEC command file is provided to copy the required command files to the work disk. This is set up to work on a Microbox ][ which has a promisk as the system disk, a ramdisk as the work disk and a floppy in drive 2 (with ALLOCATE 2301, ASN S=A W=1 set up). Users with other machines should examine GET09.TXT to see which files are copied.
+,pp
+The library files contain 6809 assembler source code which is indicated by the 9 in the filename. The assembler looks at LIBDEF.TXT the library definition file and LIBLOAD.TXT, the library load file. For 6809 compilation these are copies of the files LIBDEF09.TXT and LIBLOAD9.TXT. (This makes it easier to use the optional 6801 compiler libraries that have a 1 in the filename).
+,pp
+LIBLOAD.TXT causes other libraries to be loaded. These include the default runtime library LIBC09.TXT, the macro definition file LIBM09.TXT, the FLEX equates file LIBF09.TXT, the standard I/O library LIBS09.TXT and the "printf" library LIBP.TXT. Some other libraries are also available.
+,pp
+The commands for straightforward compilation of a single file are now described, for a full description of the various options see section 3, Compiler Operation.
+
+,in 8
++++cc file.c -o file.m
+
+The "-o" must have a lower case "o".
+
++++opt file.m file.om
++++asmb file.om file.cmd +ls
+
+Now, to run the program, type its name:
+
++++file 
+
+,in 0
+,pp
+Remember to specify any drive numbers that your setup may require.
+,pp
+The first command, cc, invokes the compiler to take file.c as input and file.m as output. The '-o' indicates that the next word on the command line is the output filename. This is necessary because more than one input file can be compiled at a time, and no default extensions are assumed. The '.m' extension for the output file is a suggested convention to indicate that the file contains macro language.
+,pp
+The second command, opt, invokes the optimiser to take file.m as input and file.om as output. The optimiser removes some redundant code sequences and can save around 20% on program size for large programs. It is not necessary to use the optimiser and the '.m' file can be assembled directly if required.
+,pp
+The third command, asmb, causes the file of macro's to be assembled to an executable form. The runtime libraries are automatically included and assembled at this stage and the '+ls' option disables generation of the assembly listing and symbol table. Note that FLEX command options are often introduced by a '+' while Unix options are introduced by a '-'. The compiler follows Unix conventions where possible.
+,pp
+When the program is run, parameters can be passed to it as words separated by spaces on the command line. Accessing these words is explained later in this tutorial section.
+
+
+,ce 1
+2.1 A Simple C program Explained
+,pp
+Edit the following program into the file hello.c . 
+
+/* hello.c, a polite program */
+
+#include "stdio.h"      /* get header file */
+
+main()                  /* start of program */
+        {
+        puts("\nHello, pleased to meet you.\n");
+        }
+
+/* end of hello.c */
+
+,pp
+The first line of the program is a comment bracketed with the symbols /* and */ .
+,pp
+The line #include "stdio.h" is a preprocessor directive. All lines starting with a hash in column one are interpreted as commands which cause special actions to be taken before actual compilation occurs. This particular command causes the contents of the file "STDIO.H" in the work directory to be read by the compiler as if it had been typed in at this point. STDIO.H contains standard I/O definitions which are needed by almost all C programs so the #include saves having to type in the definitions for each program individually.
+,pp
+The word main() introduces a function called main that has no values passed to it. A C function is similar to an assembly language subroutine. Execution of a C program always begins at the function called main and stops at the end of main. The brackets () indicate that it is a function. 
+,pp
+The body of the function is a list of statements bracketed with braces { and }. Each statement is terminated with a semicolon. Note that, unlike Pascal, a semicolon is required after every statement not just between statements. This can cause problems for Pascal programmers who are new to C.
+,pp
+There is only one statement in this program and
+
+        puts("\nHello, pleased to meet you.\n");
+
+is a call to the runtime library function puts which outputs a string to the screen. The double quoted text "..." is a string literal which is stored in memory as an array of characters with a null (zero) at the end. The value that is actually passed to puts is the address of the first character in the string (or in C terminology, a POINTER to the string) and puts outputs characters until it finds the null at the end of the string. A newline is output by puts after the string. The string contains some special characters at its beginning and end. The backslash character is used to give special meaning to the following character and the combination \n causes a newline to be embedded in the string at that point. The effect of this statement is that a newline is sent to the screen which causes a carriage return, line feed action. The words "Hello, pleased to meet you." are displayed followed by two more newlines, one from the string and one extra from puts.
+,pp
+The closing brace } is the end of main and the program then returns to the operating system.
+,pp
+That's the theory, now try it out! Compile the above program with the following commands.
+,in 8
+
++++cc hello.c -o hello.m
+
+Its not worth optimising so go straight on with
+
++++asmb hello.m hello.cmd +ls
+
+Then run the program, the output should be as shown:
+
++++hello
+Hello, pleased to meet you.
+
+
+You now have a polite computer!
+,in 0
+,pp
+If the assembler gives a "file not found" error message then check that the library files are present on the work disk. If you are not used to C, why not try modifying hello.c to output different characters, or strings, just to get used to the language. You could also try leaving out parts of the program to see the error messages produced by the compiler.
+
+
+,ce 1
+2.2  A More Advanced C program
+
+,pp
+Edit the following program into the file greet.c .
+
+/* greet.c, a personalised greeting program */
+
+#include "stdio.h"
+
+main(argc,argv)
+        int     argc;
+        char    *argv[];
+        {
+        if ( argc < 2 )
+                {
+                puts("\nGreet who?");
+                exit(1);
+                }
+        printf("\nHello %s, pleased to meet you",argv[1]);
+        }
+
+,pp
+This program illustrates command line argument passing for C programs. Both FLEX and Unix use command line argument passing and small-C is the same as standard C in this respect. The command line that was typed to invoke an executable C program is stored by the program and broken up into words. The number of words found is counted (words are delimited by spaces) and is passed as a parameter to the function main. The words themselves are organised into an array of strings and the address of the array is passed as a second parameter to main. The arguments can be given any names, but the convention is to call the argument count "argc" and the argument values "argv".
+,pp
+Looking at the program, there is a comment at the top and stdio.h is #included as before, but the definition of the function main now indicates that it has two parameters called argc and argv which correspond to the values just described. The command line processing is performed by part of the runtime library which is invoked when the program is executed, calls main as a subroutine, then returns to FLEX. It's perfectly ok to ignore the parameters being passed to main if they are not required, as in the previous example hello.c . C compilers dont bother to check whether the number of arguments passed to a function corresponds to the number that the function expects, it's up to the programmer to get it right.
+,pp
+As well as giving parameter names in brackets after the function name, it is necessary to give the types of the parameters. This is done between the closing bracket ')' and the opening brace '{' of the function body. The parameters must be specified in the same order with the same names as they were in the brackets. In this case, argc is declared to be an integer with the statement "int argc;" and argv is declared to be an array of pointers to characters, where each pointer contains the address of a word on the command line and each word has a null terminator appended. In the declaration "char *argv[];" the square brackets [] indicate an array of unknown length and the * indicates a pointer to the basic type, which is char for character. Compound types such as this are not dealt with very cleverly by the small-C compiler and can only be used as arguments to functions.
+,pp
+The body of main is declared enclosed in braces { and } as before. The first statement tests to see if the required number of command line arguments has been typed. These arguments include the name of the program as argv[0] and as the next word is needed by greet, at least 2 arguments are required. The "if" statement is a familiar construct in high level languages and the general form in C is:
+
+,in 8
+if ( expression )
+        statement1;
+else
+        statement2;
+,in 0
+
+Note that the brackets are always required around the expression, there is no "then" keyword, and that a semicolon is always required before the "else". (Unlike Pascal where a semicolon before an "else" is illegal). The "else" and statement2 are optional.
+,pp
+If the expression evaluates to a non zero value then statement1 is executed, otherwise statement2 is executed. C uses nonzero and zero expressions as true and false values, which is a very powerful and flexible feature of the language.
+,pp
+In this case the expression is ( argc < 2 ). The less than operator '<' will return 1 (true) if argc is less than 2 or 0 (false) if argc is not less than 2. Since the program uses a command line argument as the name of the person to greet, having less than 2 arguments (remember that the name of the program is one argument) is an error. The statement controlled by the if is a compound statement which consists of two statements bracketed together between { and }. First the library function puts is used to print an error message on the screen and then the library function exit is called which returns directly to the operating system. A parameter is passed to exit which is not used by small-C but to be compatible with Unix it should be a 0 if the program is exiting normally, or a 1 if an error has occured.
+,nl 10
+,pp
+Since exit never returns to the program running greet with no arguments will produce the following response.
+
+,in 8
++++greet
+Greet who ?
+
++++
+,in 0
+
+,pp
+If there are two or more command line arguments then the calls to puts and exit are skipped. The next statement is a call to the function printf with a string and argv[1] passed as its parameters. The printf library function performs formatted printing, the string contains embedded format specifiers and the other parameters are things to be printed. In this case the string is printed as it is except for the %s which is the format for a string parameter. The value of argv[1] will be printed as a string in place of the %s. argv was declared as an array of pointers to characters and argv[0] is the first pointer (which should be equal to "greet") while argv[1] is the second pointer.  Arrays in C always start at [0], the reason for this is explained in section 4. "Small C Language Definition".
+,pp
+After printf is the end of the main fuction definition and the end of the program.
+,pp
+Finally, what happens when the program is run ? The response is shown below.
+
+,in 8
++++greet Fred
+Hello Fred, pleased to meet you.
+
++++greet Joe Bloggs
+Hello Joe, pleased to meet you.
+,in 0
+
+,pp
+One important point to note is that programs that use command line arguments should always check the argument count to make sure that enough arguments have been supplied. They should then print an error message and call exit if there are any problems.
+
+
+,ce
+2.3 A More Complicated Example
+
+,pp
+You may have noticed that greet.cmd is much bigger than hello.cmd on the disk. This is because it uses printf which is the biggest and most complicated library function provided with small-C. We can make greet.cmd smaller by defining our own string output routine and this is shown below.
+,nl 20
+
+/* greets.c, a smaller greeting program */
+
+#include "stdio.h"
+
+main(argc,argv)
+        int argc;
+        char *argv[];
+        {
+        if (argc < 2)
+                {
+                puts("\nGreet who?");
+                exit(1);
+                }
+        outstr("\nHello ");
+        outstr(argv[1]);
+        outstr(", pleased to meet you");
+        }
+
+outstr(s)
+        char *s;
+        {
+        while( *s )
+                putchar( *s++ );
+        }
+
+/* end of greets.c */
+
+,pp
+This example behaves the in the same way as the previous version. Instead of using a single call to printf it uses three calls to a function called outstr to achieve the same result. Note that the library routine puts could not be used because it always adds a newline to the output string. The outstr routine is not provided in the library so it is defined in the program. The functions can be defined in any order in a file as if they were assembly language subroutines.
+,pp
+Outstr is defined as a function in the same way as main. The parameter to outstr is defined as a pointer to character called s. This contains the address of the string to be printed. The body of the function uses a while loop which executes a statement repeatedly until a test becomes false. The test is an expression in brackets after the while keyword and the expression *s evaluates to the value of the character that s points to. This character is non-zero unless it is a null so the while can be read as "while s doesnt point to a null do the next statement". The body of the while loop consists of a call to putchar passing the character pointed to by s. This time the increment operator is used. The expression *s++ increments the pointer to point to the next character in the string but s is incremented after the *s has been evaluated. This means that the current character is output but that s now points to the next character. This behaviour is exactly the same as the post increment indexed addressing mode of 6809 assembler.( lda ,x+ ). ,pp
+The putchar library function simply outputs the character to the screen.
+,pp
+When outstr gets to the null at the end of the string it leaves the while loop and comes to the end of the function definition. It then returns to the place that it was called from.
+,pp
+As further examples of small-C in use, the source code for the optimiser and a primitive version of the Unix utilities grep (which finds a string in a file) and tr (which transliterates characters, e.g. tr a-z A-Z file1.txt file2.txt will convert file1.txt into upper case in file2.txt), are supplied on the distribution disk. Look at these programs along with the examples given in section 6. "The Runtime Libraries" and section 4. "Small C Language Definition". The most difficult thing in C is the correct use of pointers, it sometimes helps to think in terms of the 6809 addressing modes or try to find an example of what you are trying to do. tr.c uses a lot of pointer operations and it is worth spending some time trying to understand what is going on in the code, using section 4 as a reference.

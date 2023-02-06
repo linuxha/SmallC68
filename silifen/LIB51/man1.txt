@@ -1,0 +1,56 @@
+,pn 1
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 1
+Introduction
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+
+
+`$1B,'!,24`
+,ce 1
+1. Introduction
+
+`$1B,'!,8`
+,pp
+C is a compiled language. This means that C programs are written as text files (known as source files) and then a C compiler is used to read the program text and output a file which can be assembled to produce an executable command. Pascal is another compiled language that was designed for teaching computer science while Basic is an interpreted language designed for newcomers to computing. Most people know Basic but it is hard to write programs of any size in Basic because the language is unstructured and programs run slowly. Pascal is a structured language that runs much faster than Basic but because of deficiencies in the original language specification there are many incompatible versions of the language available. Pascal was not designed to be used to write large programs and problems occur when it would be desirable to split a program into several source files so that they can be edited and compiled more easily. Assembly language (sometimes called machine code) programs are difficult to write but run fastest. Programs written in C run faster than Pascal programs because C includes many of the features of assembly language in a structured way. C was  also designed to cope with large programs and most versions of the language are compatible.
+,pp
+The C language is becoming more widely known in the computer industry for two main reasons. The first reason is that it combines most of the speed and efficiency of assembler with the benefits of a high level language. It is available for almost every type of computer from 8 bit microprocessors through 16 and 32 bit micros and minicomputers to large mainframes. Programs can be written in C much more quickly and easily than in assembler and they do not need to be completely rewritten to run on another computer. For example, the programs written by the software house Psion for the Sinclair QL were written in C and the same programs are available for the IBM PC. These two computers have completely different operating systems and processors but the C language is the same for both of them.
+,pp
+The second reason for the popularity of C is that the Unix operating system has become an industry standard. This operating system was originally written in the late 1960's using assembler but the designers then defined the language C and rewrote Unix in C. The very first C compiler was the Unix C compiler and the language was designed to match the requirements of a large and complex project. Unix is a good operating system for many reasons but the main reason that it has become an industry standard is that it is written in C and can in principle be run on any computer that has a C compiler available for it. It is obviously much easier to write a compiler for a new computer and then recompile the whole operating system than it is to rewrite the whole operating system from scratch in assembler.
+,pp
+The facilities of an operating system (input/output and file handling) are available to users of the C language via a library of subroutines. These routines have standard names and parameters for all implementations of C under the Unix operating system and most other implementations of C follow the same standard where possible. Silicon Fen Software has followed the standard where possible and programs written using this compiler and its subroutine libraries can be compiled and run with no changes to the program on any Unix based computer. (Or any other computer with a Unix standard C compiler). Extra subroutines have been written which use special features of FLEX-9 but for each subroutine described in section 6 of this manual the extent of Unix compatibility is noted.
+,pp
+This C compiler accepts as input text files containing a subset of the C language and generates an output text file in a processor independent macro assembly language. Macros and library routines are provided for 6809, FLEX-9 operation using the standard FLEX macro assembler. Compilation for the 6801 and 6301 ranges of single chip microcomputers is available as an option and requires a special assembler (see your dealer for details). Compilation for the 68000 is under development and the compiler will eventually be available on 68000 based computers.  The compiler is based on the original 8080 small-C compiler by Ron Cain, published in Doctor Dobbs Journal. It has been extensively modified to generate code for the Motorola family of processors however and 8080, Z80 support is not available.
+,pp
+This manual contains a tutorial introduction to C as well as a small-C language definition. This should be sufficient for most users but the standard text book on C is 'The C Programming Language' by B.W.Kernighan and D.M.Ritchie  (Prentice Hall). This costs over 20 pounds. A much cheaper and easier introduction, which also includes listings of an 8080 small-C compiler, is 'A Book on C' by Berry and Meekins (Macmillan) which is only 7.50. The differences between small-C and standard C are listed in section 5 of this manual and it is recommended that section 5 is read before trying the text book. The main omissions are floating point maths and data structure definitions.
+,pp
+This compiler is intended to be used as a substitute for assembler in systems programming and real time control applications. It is substantially cheaper than other FLEX C-compilers and is upwards compatible, i.e. programs written in small-C can be recompiled without any changes using a more expensive compiler (as long as the compiler uses the unix standard runtime library). The small-C compiler itself is written in the small-C subset and compiles and runs with no changes to the code on both FLEX-9 and PDP-11 Xenix (same as Unix) systems.
+,pp
+Copyright exists on the small-C compiler and covers the manual, the executable compiler command, the source code of the runtime libraries and the example C programs. Programs written using the compiler and runtime library are not covered by any restrictions or copyright as long as the source code for the runtime libraries is not resold. Silicon Fen Software cannot be held liable for any loss or misfortune caused by a failure of this product.
+,pp
+If any problems or queries arise concerning the compiler or its runtime libraries then Silicon Fen Software should be notified in writing; telephone support is not available.
+,pp
+ New releases of this compiler will be available to existing users for a nominal charge to cover media and delivery costs.
+
+

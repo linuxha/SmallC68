@@ -1,0 +1,317 @@
+* libs01 R1.1 29/8/85
+*
+* Copyright Silicon Fen Software 1985
+*
+* This file is automatically loaded when stdio.h is used
+*
+* Unix compatible standard (not file) i/o functions
+*
+ IF GETS
+* read a newline terminated string into s, replace the newline
+* with a null and return s.
+* char *gets(s)
+* char *s;
+gets tsx
+ ldx 2,x
+ pshx
+GETS1 jsr getchar
+ cmpb #13
+ beq GETS2
+ pulx
+ stab ,x
+ inx
+ pshx
+ bra GETS1
+GETS2 pulx
+ clr ,x
+ tsx
+ ldad 2,x
+ rts
+ ENDIF
+*
+ IF PUTS
+* output string s, add a newline
+* puts(s)
+* char *s;
+puts tsx
+ ldx 2,x
+ clra
+PUTS1 ldb ,x
+ beq PUTS2
+ pshx
+ pshd
+ jsr putchar
+ pulx
+ pulx
+ inx
+ bra PUTS1
+PUTS2 ldb #13
+ pshd
+ jsr putchar
+ pulx
+ rts
+ ENDIF
+*
+* output a character
+* putchar(c)
+* char c;
+putchar tsx
+ ldaa 3,x
+ cmpa #$D
+ beq PUTCH1
+ jsr PUTCHR
+ rts
+PUTCH1 jsr PCRLF
+ rts
+*
+* input a character
+* int getchar()
+getchar jsr GETCHR
+ tab
+ clra
+ cmpb #4 control-D
+ beq GETCH1
+ rts
+GETCH1 ldad #-1 EOF
+ rts
+*
+ IF PUTDEC
+* output in decimal as in flex with f as space suppression flag
+* putdec(n,f) int n,f;
+putdec 
+* CUSTOM ROUTINE FITS HERE
+ err CUSTOM putdec NOT SUPPLIED
+ rts
+ ENDIF
+*
+ if PUTHEX
+* output integer in hex
+*puthex(n)
+*       int n;
+puthex FUNC 1
+ INCS -1-2
+ GETLOC 0
+ PUSH
+ IMMED 12
+ PUTSW
+CCLS04
+ GETWS  0
+ PUSH
+ IMMED 0
+ CCGE
+ NTST CCLS03
+ GOTO CCLS05
+CCLS02
+ GETLOC 0
+ PUSH
+ GETWS  2
+ PUSH
+ IMMED 4
+ SUBS
+ PUTSW
+ GOTO CCLS04
+CCLS05
+ GETLOC 2
+ PUSH
+ GETWS  7
+ PUSH
+ GETWS  4
+ ASRS
+ PUSH
+ IMMED 15
+ ANDS
+ PUTSB
+ PUSH
+ IMMED 9
+ CCGT
+ NTST CCLS06
+ GETBS  2
+ PUSH
+ IMMED 10
+ SUBS
+ PUSH
+ IMMED 65
+ ADDS
+ PUSH
+ CALL putchar,2
+ INCS 2
+ GOTO CCLS07
+CCLS06
+ GETBS  2
+ PUSH
+ IMMED 48
+ ADDS
+ PUSH
+ CALL putchar,2
+ INCS 2
+CCLS07
+ GOTO CCLS02
+CCLS03
+ INCS 3
+ RET
+ endif
+*
+* simulated file routines for use with stdin and stdout only
+*
+ IF FGETC|FGETS
+* get a character from a file, return EOF (integer -1) if fail
+* 6801 version only works with stdin
+* int fgetc(stream)
+* FILE *stream;
+fgetc tsx
+ ldad 2,x
+ cmpd #1 stdin
+ bne FGETC1
+ jsr getchar
+ rts
+FGETC1 
+ ldad #-1 
+ rts
+ ENDIF
+*
+ IF FRDCHK
+* return 1 if a char can be read from the stream else 0 or EOF on error
+* 6801 version only works with stdin, stdout
+* int frdchk(stream)
+* FILE *stream;
+frdchk tsx
+ ldad 2,x
+ cmpd #1 stdin
+ beq FRDCH1
+ ldad #-1 EOF for anything else
+ rts
+FRDCH1 jsr STAT
+ beq FRDCH3
+ ldad #1 char ready
+ rts
+FRDCH3 ldd #0 no char
+ rts
+ endif
+*
+ IF FPUTC|FPUTS
+* put a character in a file, return the character or EOF if error
+* 6801 version only works for stdout
+* int fputc(c,stream)
+* char c;
+* FILE *stream;
+fputc tsx
+ ldad 2,x
+ cmpd #2
+ bne FPUTC1
+ ldad 4,x
+ pshd
+ jsr putchar
+ ins
+ ins
+ tsx
+ ldad 4,x
+ rts
+FPUTC1 ldad #-1 
+ rts
+ ENDIF
+*
+ if FGETS
+* get up to n-1 chars into s. return s if ok. return NULL if problems.
+* stop on newline and put newline in s. 6801 stdin only
+*fgets(s,n,stream)
+*        char *s;
+*        int n;
+*        FILE *stream;
+fgets FUNC 3
+ INCS -2-2
+ GETLOC 0
+ PUSH
+ GETWS  12
+ PUTSW
+ GETWS  6
+ PUSH
+ IMMED 1
+ CCNE
+ NTST CCLS08
+ IMMED 0
+ INCS 4
+ RET
+CCLS08
+CCLS09
+ GETLOC 8
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ PUSH
+ IMMED 0
+ CCGT
+ NTST CCLS10
+ GETLOC 2
+ PUSH
+ GETWS  8
+ PUSH
+ CALL fgetc,2
+ INCS 2
+ PUTSW
+ PUSH
+ IMMED 1
+ NEGD
+ CCEQ
+ NTST CCLS11
+ IMMED 0
+ INCS 4
+ RET
+CCLS11
+ GETLOC 0
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ PUSH
+ GETWS  4
+ PUTSB
+ PUSH
+ IMMED 13
+ CCEQ
+ NTST CCLS12
+ GOTO CCLS10
+CCLS12
+ GOTO CCLS09
+CCLS10
+ GETWS  0
+ PUSH
+ IMMED 0
+ PUTSB
+ GETWS  10
+ INCS 4
+ RET
+ endif
+*
+ IF FPUTS
+* output a string to a stream
+* fputs(s,stream)
+* char *s;
+* FILE *stream;
+fputs tsx
+ ldx 4,x
+ pshx
+FPUTS1 pulx
+ clra
+ ldab ,x
+ beq FPUTS2
+ bpl FPUTS3
+ coma
+FPUTS3 inx
+ pshx
+ pshd
+ tsx
+ ldad 6,x 
+ pshd
+ jsr fputc
+ ins
+ ins
+ ins
+ ins
+ cmpd #-1 
+ bne FPUTS1
+ pulx
+FPUTS2 rts
+ ENDIF
+* end of libs01

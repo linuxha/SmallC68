@@ -1,0 +1,512 @@
+,pn 1
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Appendix A - Graphics for the Microbox ][
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+### A
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+`$1B,'!,24`
+,ce 2
+Appendix A - Graphics for the Microbox ][
+
+`$1B,'!,8`
+,pp
+The Microbox ][ has a high resolution monochrome graphics screen which is handled separately from the text screen. The monitor ROM provides a set of entry points for routines which drive the 7220 GDC to give basic graphics primitives. These routines are not directly callable from C programs and they do not limit drawing to the screen. Drawing off the edge of the graphics screen can cause corruption of the Microbox ramdisk which is held in spare graphics RAM. One other problem is that when characters are output to the text screen they corrupt the cursor position and linestyle for the graphics screen.
+,pp
+The screen has 768 pixels horizontally (x direction) and 576 pixels vertically (y direction). The origin (0,0) is at the top left corner of the screen and the bottom right corner is (767,575).
+,pp
+The routines provided for graphics from C are in three levels. The base level is Microbox specific and has the letters 'mb' prefixed onto every routine name. This level is written in assembler, it saves and restores the graphics cursor etc and it contains routines to check the bounds of graphics operations.
+,pp
+The mid level routines are intended to be largely machine independent, there is a letter 'g' prefixed onto every routine name. These routines call the base level routines to perform graphics operations and allow windows to be set on the display which limit graphics operations. These routines are written in C. It is possible to swap the directions of the axes and the default origin is in the bottom left corner of the screen using these routines.
+,pp
+Higher level graphics routines will be added to the graphics library from time to time. Where possible these top level routines will be compatible with the international standard Graphics Kernal System (GKS).
+,pp
+The base level graphics routines form a subroutine library in libg.txt which is automatically searched by the assembler when the header file plot.h is #included in a C program. As with the other small-C libraries only routines that have been called end up in the executable code due to the conditional assembly system.
+,pp
+The mid level C graphics routines exist as C source code in graphics.c and if they are used then they should be compiled together with the users program. Note that #include "plot.h" is still required at the top of the users program. The whole of graphics.c ends up in the executable code because it is supplied in C source code form. This currently amounts to around 2 Kbytes (not including base level routines). graphics.c can be #included in the users program, the required sections of code can be copied into the program or graphics.c can be compiled together with the program.
+,nl 12
+
+e.g.
+        To compile gtest.c with graphics.c type:
+
+        +++cc gtest.c graphics.c -o gtest.m
+
+        Optimise with:
+
+        +++opt gtest.m gtest.om
+
+        Assemble with:
+
+        +++asmb gtest.om gtest.cmd +ls
+
+,pp
+An example program called gtest.c is provided on the distribution disk. It uses all of the routines and draws a picture in a window which is moved across the screen by moving the window. The picture consists of a rectangle, a filled block with a defined pattern, a point, a circle of random radius and the word 'Hello'. The character size increases until the word will not fit into the window. Examples of calls to the base level routines are given in graphics.c.
+,pp
+A useful set of Microbox ][ utilities which provide interactive graphics and a character set editor are available from Silicon Fen Software. The most interesting program is  ig.txt which is an assembler program that extends the FLEX memory resident command table to provide interactive calls to the base level graphics routines. It resides in spare RAM alongside the pretty character set (provided with the Microbox) and once loaded it is permanently available until FLEX is rebooted. This provides examples of calls from assembler into the C runtime library and was written to test the base level routines. (XBASIC users can use ig to do graphics from BASIC using the 'EXEC, "flex-command"' statement. C programs can also use IG with the 'system("flex-command")' routine.)
+,pp
+A utilitie allows characters to be drawn on the graphics screen with a zoom factor to enlarge the text, and another provides interactive line drawing using cursor keys and a "rubber band" technique. The utilities also include programs to save and restore screen images to disk files and a screendump to printer program. They are mostly written in small-C and the source code is provided.
+
+,pg
+NAME
+        mbgraph,mbtext          display text or graphics
+        mbclrg                  clear graphics screen
+        restore                 restore cursor etc
+
+SYNTAX
+        #include "plot.h"
+
+        mbgraph()
+
+        mbtext()
+
+        mbclrg()
+
+        restore()
+
+DESCRIPTION
+,pp
+mbgraph switches the monitor display to the graphics screen. mbtext switches back to text. Neither routine has any effect on the contents of the screens. It is not necessary to have the text screen visible while writing text or to have the graphics screen visible while drawing pictures.
+,pp
+mbclrg clears the graphics screen. There is a bug in the Microbox graphics primitive in ROM, when the graphics screen is cleared one line of pixels on the text screen is also cleared.
+,pp
+restore is used by most of the base level graphics routines to restore the cursor, pen and linestyle before performing a graphics operation. These values are corrupted when characters are output to the text screen. restore is not usually called directly from C but it is documented here so that users can use it in extensions to the graphics library.
+
+COMPATIBILITY
+,pp
+These routines will only work on a Microbox ][.
+
+,pg
+NAME
+        mbsetp                  set pen type and line style
+
+SYNTAX
+        #include "plot.h"
+
+        mbsetp(pen, linestyle)
+                int     pen, linestyle;
+
+DESCRIPTION
+,pp
+When pictures are drawn on the graphics screen the pen and linestyle parameters control the pattern of pixels produced by a line. plot.h contains the following #defines:
+
+        #define REPLACE         0       /* pen types */
+        #define COMPLEMENT      1
+        #define RESET           2
+        #define SET             3
+        #define SOLID           -1      /* line styles */
+        #define DASHED          255
+,pp
+The default pen type is REPLACE and the default linestyle is SOLID. This causes every pixel to be replaced by an 'on' pixel when a line is drawn. The linestyle is a 16 bit value which is interpreted as a pattern of pixels to be repeated along the line being drawn. SOLID is defined as -1 which is equivalent to 1111111111111111 in binary so all pixels are on. DASHED is defined as 255 which is equivalent to 0000000011111111 in binary so the lines drawn will have eight bits set then eight bits clear repeated along their length. Any other styles formed from a 16 bit pattern can be used. The COMPLEMENT pen type causes an exclusive or operation between the existing value of each pixel and a bit in the linestyle. Using the SOLID linestyle every pixel along a line will be toggled so that pixels that were set are cleared and those that were clear are set. Using the DASHED linestyle eight pixels will be toggled then eight will be left as they are and this is repeated along the line. The RESET pen type causes pixels to be cleared according to the linestyle. Where there is a bit set in the linestyle a pixel will be cleared. If there is no bit set then the pixel is left as it was. The SET pen type causes pixels to be set according to the linestyle. Where there is a bit set in the linestyle a pixel will be set. If there is no bit set then the pixel is left as it was. mbsetp can be called at any time and all subsequent lines drawn will use the new pen type and line style. The existing picture on the screen is not affected. All operations that draw lines are controlled by the linestyle including circles and rectangles but not area fills. All operations without exception are controlled by the pen type. i.e. in COMPLEMENT/SOLID mode a block fill will toggle every pixel in the block.
+
+COMPATIBILITY
+,pp
+This routine will only work on a Microbox ][ and the operations are supported by hardware in the 7220 GDC.
+,pg
+
+NAME
+        mbsetgc                 set the graphics cursor
+        mbgetgc                 get the graphics cursor
+        mbline                  draw a line
+        mbpchk                  check a point is in a window
+
+SYNTAX
+        #include "plot.h"
+
+        int mbsetgc(x,y)
+                int x,y;
+
+        mbgetgc(px,py)
+                int *px,*py;
+
+        int mbline(x,y)
+                int x,y;
+
+        int mbpchk(x,y,xmin,ymin,xmax,ymax)
+                int x,y,xmin,ymin,xmax,ymax;
+
+DESCRIPTION
+,pp
+mbsetgc checks that x,y is on the screen, if it is then the graphics cursor is moved to x,y without drawing a line and 1 is returned, if x,y is off the screen then the cursor is not moved and 0 is returned. The screen limits are fixed at XMIN<=x<=XMAX and YMIN<=y<=YMAX, the limits are defined in plot.h as:
+        #define XMIN    0
+        #define XMAX    767
+        #define XSPAN   768
+        #define YMIN    0
+        #define YMAX    575
+        #define YSPAN   576
+,pp
+mbgetgc is passed two pointers to integers. The current graphics cursor position is stored at the addresses passed. e.g.
+        int xpos,ypos;
+        mbgetgc(&xpos,&ypos);
+,pp
+This will store the current position in xpos and ypos.
+,pp
+mbline behaves like mbsetgc except that if x,y is on the screen then a line is drawn to x,y using the current pen type and linestyle and the cursor is left at x,y.
+,pp
+mbpchk returns 1 if x,y is in the limits xmin<=x<=xmax and ymin<=y<=ymax otherwise it returns 0. No graphics operations are performed. This function is used by the higher level window based graphics routines.
+
+COMPATIBILITY
+,pp
+These routines will only work on a Microbox ][.
+,pg
+NAME
+        mbpoint                 set the current pixel
+        mbcirc                  draw a circle
+        mbcchk                  check circle is in a window
+
+SYNTAX
+        #include "plot.h"
+
+        mbpoint()
+
+        int mbcirc(r)
+                int r;
+
+        int mbcchk(r,xmin,ymin,xmax,ymax)
+                int r,xmin,ymin,xmax,ymax;
+
+DESCRIPTION
+,pp
+mbpoint sets the pixel at the current cursor position according to the current pen type and linestyle. If the linestyle is not SOLID then points will only be drawn when the current bit in the linestyle is set.
+,pp
+mbcirc draws a circle centered on the current cursor position of radius r. The maximum permitted radius is #defined as RMAX in plot.h and is 127. If a call to mbcirc is made with 0<=r<=RMAX then the circle is drawn and 1 is returned otherwise no circle is drawn and 0 is returned.
+,pp
+mbcchk checks to see if a circle of radius r drawn at the current coodinates will fit into a window given by xmin,ymin,xmax,ymax. 1 is returned if ok and 0 is returned if it won't fit. No graphics operation is performed. Note that mbcirc does not check that the circle will fit onto the screen so mbcchk should always be used to prevent corruption of the ramdisk.
+
+EXAMPLE
+        if (mbcchk(100,XMIN,YMIN,XMAX,YMAX))
+                {
+                if (mbcirc(100))
+                        puts("circle drawn ok");
+                else
+                        puts("radius too large");
+                }
+        else
+                puts("circle wont fit onto the screen");
+
+
+COMPATIBILITY
+,pp
+These routines will only work on a Microbox ][.
+
+,pg
+NAME
+        mbrect                  draw a rectangle
+        mbfill                  fill a block
+        mbspat                  set fill pattern
+        mbbchk                  check box is in window
+
+SYNTAX
+        #include "plot.h"
+
+        mbrect(d,dside,oside)
+                int d,dside,oside;
+
+        mbfill(d,dside,oside)
+                int d,dside,oside;
+
+        mbspat(p)
+                char p[];
+
+        int mbbchk(d,dside,oside,xmin,ymin,xmax,ymax)
+                int d,dside,oside,xmin,ymin,xmax,ymax;
+
+DESCRIPTION
+,pp
+These routines use a strange representation of a rectangle which is due to the 7220 GDC. d is the initial drawing direction and is #defined in plot.h as:
+
+        #define D_DOWN  0       downwards (+ve y)
+        #define D_DR    1       down and right (+ve x and y)
+        #define D_RIGHT 2       rightwards (+ve x)
+        #define D_RU    3       right and up (+ve x, -ve y)
+        #define D_UP    4       upwards (-ve y)
+        #define D_UL    5       up and left (-ve x and y)
+        #define D_LEFT  6       leftwards (-ve x)
+        #define D_LD    7       left and down (-ve x, +ve y)
+,pp
+dside is the length of the side of the box in the initial direction and oside is the length of the side of the box in the other direction which is always anticlockwise from the initial direction by 90 degrees. (i.e. (d+2)%8 is the direction of oside ). The box always starts at the current graphics cursor and the cursor position is preserved.
+,pp
+mbrect draws a rectangle using the current pen type and linestyle defined by d,dside and oside as above. No error checking is performed so the rectangle could easily corrupt the Microbox ramdisk by drawing off the edge of the screen.
+,pp
+mbfill fills a block using the current pen type but the fill pattern is set to all ones and the linestyle is ignored. The outline of the block is equivalent to a call to mbrect with the same parameters. If the block is drawn in one of the intermediate directions (so that the sides are at 45 degrees to the horizontal) then only every other pixel is affected in a checkerboard pattern. This is a feature of the 7220 GDC. A solid block can be produced by incrementing the x coordinate only then calling mbfill again with the same parameters. There is no problem in the other directions. mbfill doesnt check that it is drawing on the screen so corruption can occur as with mbrect.
+,pp
+mbspat changes the bit pattern that is used by mbfill. The default is all ones to give a solid fill but any pattern of 8 bits by 8 bits can be used. mbspat expects the address of 8 bytes to use as a pattern as its parameter. This pattern should be specified in an array of 8 characters before calling mbspat.
+,pp
+mbbchk checks that a box can be drawn in a window for use with both mbrect and mbfill. It returns 1 if a box can be drawn from the current cursor position and 0 if it cannot.
+
+EXAMPLE
+        char pat[8];
+
+        fill(pat,8,0x55); /* hex 55 = binary 01010101 */
+        mbspat(pat);    /* set up as pattern */
+        if (mbbchk(D_RIGHT,100,100,XMIN,YMIN,XMAX,YMAX))
+                {
+                mbrect(D_RIGHT,100,100);
+                mbfill(D_RIGHT,50,50); /* inside so ok */
+                }
+        else
+                puts("can't draw box on screen");
+
+COMPATIBILITY
+,pp
+These routines will only work on a Microbox ][.
+
+,pg
+NAME
+        mbsync          synchronise to vertical blanking
+        mbdelay         delay for a few milliseconds
+        mbrand          get a random number
+
+SYNTAX
+        mbsync()
+
+        mbdelay(t)
+                int t;
+
+        int mbrand()
+
+DESCRIPTION
+,pp
+mbsync causes a delay which will synchronise the program with the start of the vertical blanking period.
+,pp
+mbdelay causes a delay of t milliseconds.
+,pp
+mbrand returns a random integer.
+,pp
+All of these routines are implemented using direct calls into the Microbox ROM.
+
+
+COMPATIBILITY
+,pp
+These routines will only work on a Microbox ][.
+
+
+,pg
+NAME
+        mbputc          draw a graphics character
+        mbsetz          set text zoom and direction
+
+SYNTAX
+        int mbputc(c)
+                char c;
+
+        mbsetz(zoom,tdir)
+                int zoom,tdir;
+
+DESCRIPTION
+,pp
+mbputc draws a character at the current cursor position using the RAM based 'pretty' character set which defines characters to be 8 bits wide and 11 bits high. The default character orientation is upright which uses direction 6 and the current cursor position is the top right corner of the character matrix.
+,pp
+mbsetz allows the text zoom and text direction to be changed. The zoom defaults to 1 which doubles the basic character size to 16 by 22 pixels. zoom can have values from 0 to 15 which multiplies the character size by 1 to 16. The direction is equivalent to the mbfill direction but tdir=6 is required to get an upright character.
+
+COMPATIBILITY
+,pp
+These routines will only work on a Microbox ][.
+,pg
+NAME
+        ginit                   initialise graphics
+
+SYNTAX
+        #include "plot.h"
+        #include "graphics.c"
+
+        ginit(pen,linestyle,ilace)
+                int pen,linestyle,ilace;
+
+DESCRIPTION
+,pp
+ginit initialises the window based graphics system by setting up a default window containing the whole screen with the origin at the bottom left corner, clearing the graphics screen, switching to display it and setting up the pen type and line style as requested. The graphics screen interlace will be turned on or off using the ilace parameter but this has not yet been implemented.
+
+COMPATIBILITY
+,pp
+Compatible with other machines using the small-C graphics library.
+,pg
+NAME
+        gwindow                 set up a graphics window
+
+SYNTAX
+        #include "plot.h"
+        #include "graphics.c"
+
+        int gwindow(xmin,ymin,xmax,ymax)
+                int xmin,ymin,xmax,ymax;
+
+DESCRIPTION
+,pp
+The points xmin,ymin and xmax,ymax are checked to see if they are both on the screen. If they are then a window is set up with its origin at xmin,ymin and its opposite corner at xmax,ymax. These points are given in screen coordinates with the origin in the top left corner of the screen. The origin of the window does not have to be at the top left corner of the window, it can be any of the corners.
+
+e.g.
+        gwindow(0,575,767,0)
+,pp
+This will set a window covering the whole screen but with the origin in the bottom left hand corner.
+,pp
+If the window is set up ok then gwindow returns 1 and the cursor is set to the origin of the window (xmin,ymin), if either point is off the screen then gwindow returns 0.
+,pp
+When routines that draw inside a window are used the coordinates are specified in window coordinates with the origin of the window as (0,0).
+
+COMPATIBILITY
+,pp
+Compatible with other machines using the small-C graphics library.
+,pg
+NAME
+        gwtrans         transform from window coordinates
+                        to screen coordinates
+
+SYNTAX
+        #include "plot.h"
+        #include "graphics.c"
+
+        gwtrans(px,py,pxmin,pymin,pxmax,pymax)
+                int *px,*py,*pxmin,*pymin,*pxmax,*pymax;
+
+DESCRIPTION
+,pp
+This routine is not usually called directly but it is used by all the routines that work in window coordinates.
+,pp
+The values at px and py are in window coordinates on entry and pxmin etc point to uninitialised integers. On exit the values at addresses px and py are in screen coordinates and the integers pointed to by pxmin etc are set up with the window limits in screen coordinates suitable for passing to one of the mb?chk functions.
+
+
+COMPATIBILITY
+,pp
+Compatible with other machines using the small-C graphics library.
+,pg
+NAME
+        gmove           move the cursor inside a window
+        gline           draw a line inside a window
+
+SYNTAX
+        #include "plot.h"
+        #include "graphics.c"
+
+        int gmove(x,y)
+                int x,y;
+
+        int gline(x,y)
+                int x,y;
+
+DESCRIPTION
+,pp
+gmove moves the graphics cursor within a window. The coordinates are specified relative to the origin of the window. If an attempt is made to move outside the window then gmove returns 0. If the move is ok then gmove returns 1.
+,pp
+gline is the same as gmove except that a line is drawn from the current position to (x,y). It returns 1 if ok and 0 on error.
+
+COMPATIBILITY
+,pp
+Compatible with other machines using the small-C graphics library.
+
+
+,pg
+NAME
+        gcircle         draw a circle inside a window
+        gpoint          set a point inside a window
+
+SYNTAX
+        #include "plot.h"
+        #include "graphics.c"
+
+        int gcircle(r)
+                int r;
+
+        int gpoint(x,y)
+                int x,y;
+
+DESCRIPTION
+,pp
+gcircle draws a circle, radius r, within a window centered on the current cursor position. If an attempt is made to draw outside the window or the radius is too large (more than 127) then gcircle returns 0. If the circle is ok then gcircle returns 1.
+,pp
+gpoint sets the pixel at x,y and returns 1 if x,y is inside the current window. It returns 0 if x,y is outside the window.
+
+COMPATIBILITY
+,pp
+Compatible with other machines using the small-C graphics library.
+,pg
+NAME
+        grect           draw a rectangle inside a window
+        gfill           fill a rectangle inside a window
+
+SYNTAX
+        #include "plot.h"
+        #include "graphics.c"
+
+        int grect(d,dside,oside)
+                int d,dside,oside;
+
+        int gfill(d,dside,oside)
+                int d,dside,oside;
+
+DESCRIPTION
+,pp
+grect draws a rectangle starting at the current cursor position with d,dside and oside defined in the same way as for mbrect (see previous manual entry) and returns 1. If the rectangle will not fit in the window then grect returns 0. The rectangle is not affected by the position of the origin of the window.
+,pp
+gfill draws a filled in rectangle as described above and for mbfill.
+
+COMPATIBILITY
+,pp
+Compatible with other machines using the small-C graphics library.
+,pg
+NAME
+        gputs           draw a string on the graphics screen
+
+SYNTAX
+        #include "plot.h"
+        #include "graphics.c"
+
+        int gputs(s,z)
+                char *s;
+                int  z;
+
+DESCRIPTION
+,pp
+gputs writes the string s to the graphics screen with character zoom z. The current coordinates are the top left corner of the string which is written left to right. If the string will fit into the current window then it is drawn and the cursor is left at the top right hand corner of the last character, gputs returns 1. If the whole string will not fit into the window then none of it is drawn, a bleep is sounded, the cursor is not moved and gputs returns 0.
+
+
+COMPATIBILITY
+,pp
+Compatible with other machines using the small-C graphics library.
+,pg
+NAME
+        polyline       connect an array of points with lines
+
+SYNTAX
+        #include "plot.h"
+        #include "graphics.c"
+
+        int polyline(x,y,n)
+                int x[],y[],n;
+
+DESCRIPTION
+,pp
+Two integer arrays, one of x coordinates and one of y coordinates are passed to polyline along with the number of elements in the arrays. The points are connected with lines while they remain inside the current window. If all the lines are drawn then polyline returns 1 otherwise it returns 0. When arrays are passed in C the address of the array is passed, e.g.
+
+        int xarray[5],yarray[5];
+
+        xarray[0] = yarray[0] = 0;
+        xarray[1] = .... etc, initialise arrays with points
+
+        polyline(xarray,yarray,5);
+
+
+COMPATIBILITY
+,pp
+Polyline is a Graphics Kernal System (GKS) drawing primitive. This routine is in the spirit of GKS although a proper implementation would require floating point coordinate systems.
+
+
+

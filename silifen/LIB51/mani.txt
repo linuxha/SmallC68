@@ -1,0 +1,186 @@
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Index
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+`$1B,'!,24`
+,ce 2
+Index
+
+`$1B,'!,8`
+,pp
+This index covers the appendices on Microbox Graphics and 6801 code generation although they may not be supplied with the compiler. Appendices have a letter after the page number which indicates which appendix the reference is in.
+
+6801 Article            7 B
+6801 C Library          4 B
+6801 C Notes            4 B
+6801 Code Generation    1 B
+abs                     55
+Additive operators      23
+Assembler Interface 7.  70
+Assignment operators    25
+Bitwise operators       24
+Break statement         32
+Books on C              2
+btoi                    52
+C callable assembler    70
+clearerr                60
+Comments                17
+Comparison operators    24
+Compiler Operation 3.   12
+Compound statements     28
+Conditional compilation 35
+Conditional statement   30
+Constants               17
+Continue statement      32
+Conversions             19
+Copyright Restrictions  2
+Debugging check list    84
+Declarations            25
+Differences from C 5.   37
+Do statement            30
+Editors                 4
+Error messages 10.      79
+exit                    40
+Expression statements   28
+Expressions             20
+FCB allocation          78
+fclose                  59
+feof                    60
+ferror                  60
+fgetc                   66
+fgets                   68
+File I/O routines       56
+File inclusion          35
+fill                    46
+FLEX setup              4
+fopen                   57
+For statement           31
+fputc                   67
+fputs                   69
+frdchk                  62
+Function definitions    33
+gcircle                 15 A
+getc                    66
+getchar                 49
+gets                    48
+gfill                   16 A
+ginit                   11 A
+gline                   14 A
+gmove                   14 A
+Goto statement          32
+gpoint                  15 A
+gputs                   17 A
+Graphics                1 A
+grect                   16 A
+greet.c                 7
+greets.c                10
+gwindow                 12 A
+gwtrans                 13 A
+hello.c                 5
+Identifiers             17
+Image in memory 9.      77
+Implicit declarations   36
+index                   45
+Inline assembler        35,74
+isalpha                 54
+isdigit                 54
+islower                 54
+isupper                 54
+itob                    51
+I/O routines            47
+Keywords                17
+Label statement         33
+Language Definition 4.  17
+Library recipe          72
+Lvalues                 19
+Macros                  76
+mbbchk                  7 A
+mbcchk                  6 A
+mbcirc                  6 A
+mbclrg                  3 A
+mbdelay                 9 A
+mbfill                  7 A
+mbgetgc                 5 A
+mbgraph                 3 A
+mbline                  5 A
+mbpchk                  5 A
+mbpoint                 6 A
+mbputc                  10 A
+mbrand                  9 A
+mbrect                  7 A
+mbsetgc                 5 A
+mbsetp                  4 A
+mbsetz                  10 A
+mbspat                  7 A
+mbsync                  9 A
+mbtext                  3 A
+MEMEND                  77
+Memory useage           77
+Multiplicative oper's   22
+Objects                 19
+Optimisation            76
+Output macros 8.        76
+perror                  50
+polyline                18 A
+Preprocessor lines      34
+Primary Expressions     20
+printf                  63
+Processor Selection     3 B
+putc                    67
+putchar                 49
+putdec                  53
+puthex                  53
+puts                    48
+restore                 3 A
+Return statement        32
+rewind                  61
+rindex                  45
+Runtime library 6.      39
+Shift operators         23
+sign                    55
+Statements              28
+Storage classes         18
+strcat                  42
+strcmp                  43
+strcpy                  43
+String routines         42
+String constants        18
+strlen                  44
+strncat                 42
+strncmp                 43
+strncpy                 43
+Styles                  29
+Switch statement        31
+system                  41
+Token replacement       34
+tolower                 54
+toupper                 54
+Tutorial 2.             4
+Types                   18
+Unary Operators         21
+While statement         30
+
+
+

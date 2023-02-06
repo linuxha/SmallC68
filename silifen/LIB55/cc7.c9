@@ -1,0 +1,284 @@
+/*  cc7.c9 R1.1 24/4/85  */
+
+heir11(lval)
+int  *lval;
+     {
+     int     k;
+     char    *ptr;
+     k = primary(lval);
+     ptr = *lval;
+     blanks();
+     if ( (ch == '[' ) | ( ch == '(' ) )
+            while(1)
+            {
+            if ( match("[") )
+                    {
+                    if (ptr)
+                            {
+                            if ( ptr[IDENT] == POINTER )
+                                  rvalue(lval);
+                            }
+                    push();
+                    expression();
+                    needbrack("]");
+                    if (ptr)
+                        if ( ptr[TYPE] == CINT )
+                            scale(intwidth);
+                    cadd();             /* auto pull */
+                    *lval = 0;
+                    if (ptr)
+                        lval[1] = ptr[TYPE];
+                    else
+                        lval[1] = 0;
+                    k = 1;
+                    }
+            else if ( match("(") )
+                    {
+                    if ( ptr == 0 )
+                            {
+                            callfunction(0);
+                            }
+                    else if ( ptr[IDENT] != FUNCTION )
+                            {
+                            rvalue(lval);
+                            callfunction(0);
+                            }
+                    else callfunction(ptr);
+                    k = *lval =0;
+                    }
+            else return k;
+            }
+     if ( ptr == 0 )
+            return k;
+     if ( ptr[IDENT] == FUNCTION )
+            {
+            getglb();
+            outstr(ptr);
+            nl();
+            return 0;
+            }
+     return k;
+     }
+
+primary(lval)
+int  *lval;
+     {
+     char    *ptr;
+     char    sname[NAMESIZE];
+     int     num;
+     int     k;
+     if ( match("(") )
+            {
+            k = heir1(lval);
+            needbrack(")");
+            return k;
+            }
+     if ( symname(sname) )
+            {
+            if ( ptr = findloc(sname) )
+                    {
+                    getloc(ptr);
+                    *lval = ptr;
+                    lval[1] = ptr[TYPE];
+                    if ( ptr[IDENT] == POINTER )
+                            lval[1] = CINT;
+                    if ( ptr[IDENT] ==ARRAY )
+                            return 0;
+                    else return 1;
+                    }
+            if ( ptr = findglb(sname) )
+                    if ( ptr[IDENT] != FUNCTION )
+                            {
+                            *lval = ptr;
+                            lval[1] = 0;
+                            if ( ptr[IDENT] != ARRAY )
+                                    return 1;
+                            getglb();
+                            outstr(ptr);
+                            nl();
+                            lval[1]= ptr[TYPE];
+                            return 0;
+                            }
+            ptr = addglb( sname , FUNCTION , CINT , 0 );
+            *lval =ptr;
+            lval[1] = 0;
+            return 0;
+            }
+     if ( constant(&num) )
+            return ( *lval = lval[1] = 0 );
+     else
+            {
+            error("invalid expression");
+            immed();
+            outdec(0);
+            nl();
+            junk();
+            return 0;
+            }
+     }
+
+store(lval)
+int  *lval;
+     {
+     if ( lval[1] == 0 )
+            putmem(*lval);
+     else putstk(lval[1]);
+     }
+
+rvalue(lval)
+int  *lval;
+     {
+     if ( ( *lval != 0 ) & ( lval[1] == 0 ) )
+            getmem(*lval);
+     else indirect(lval[1]);
+     }
+
+test(label)
+int  label;
+     {
+     needbrack("(");
+     expression();
+     needbrack(")");
+     testjump(label);
+     }
+
+constant(val)
+     int  *val;
+     {
+     if ( number(val) )
+            {
+            immed();
+            outdec( *val );
+            nl();
+            }
+     else if ( pstr(val) )
+            {
+            immed();
+            outdec(*val);
+            nl();
+            }
+     else if ( qstr(val) )
+            {
+            getglb();
+            printlabel(litlab);
+            outbyte('+');
+            outdec(*val);
+            nl();
+            }
+     else return 0;
+     return 1;
+     }
+
+number(val)
+     int  *val;
+     {
+     int     k;
+     int     minus,i,base;
+     char    buf[20],c;
+     k = 1;
+     i = minus = 0;
+     while ( k )
+            {
+            k = 0;
+            if ( match("+") )
+                    k = 1;
+            if ( match("-") )
+                    {
+                    minus = 1;
+                    k = 1;
+                    }
+            }
+     if ( numeric(ch) == 0 )
+            return 0;
+     while ( an(ch)&(i<19) )
+            {
+            buf[i++] = inbyte();
+            }
+     buf[i] = 0;
+     if (i==19)
+            {
+            error("number truncated");
+            while(an(ch)) inbyte();
+            }
+     if (*buf=='0')     /* work out base */
+            {
+            base = 8;
+            if (toupper(buf[1])=='X')
+                 base = 16;
+            }
+     else
+            base = 10;
+     if (i != btoi(buf,i,&k,base))
+            error("invalid number");
+     if ( minus )
+            k = ( - k );
+     *val = k;
+     return 1;
+     }
+
+pstr(val)
+int  val[];
+     {
+     int     k;
+     char    c;
+     k = 0;
+     if ( match("'") == 0 )
+            return 0;
+     while (( ch) != 39 )     /* ' */
+            k = ( ( k & 255 ) << 8 ) + ( litchar() & 255 );
+     gch();     /* clear trailing ' */
+     *val = k;
+     return 1;
+     }
+
+qstr(val)
+int  val[];
+     {
+     if ( match(quote) == 0 )
+            return 0;
+     *val = litptr;
+     while ( ch != '"' )
+            {
+            if ( ch == 0 )
+                    break;
+            if ( litptr >= LITMAX )
+                    {
+                    error("string space exhausted");
+                    while ( match(quote) == 0 )
+                            if ( gch() == 0 )
+                                    break;
+                    return 1;
+                    }
+            litq[litptr++] = litchar();
+            }
+     gch();
+     litq[litptr++] = 0;
+     return 1;
+     }
+
+litchar()
+/* sort out backslash sequences */
+        {
+        int i,oct;
+        if ((ch!=92)|(nch==0))
+                return gch();
+        gch();
+        if (ch=='n') {gch(); return EOL;}
+        if (ch=='f') {gch(); return 12;}
+        if (ch=='t') {gch(); return 9;}
+        if (ch=='b') {gch(); return 8;}
+        if (ch=='l') {gch(); return 10;}
+        if (ch=='r') {gch(); return 13;}
+        if (ch==92)  {gch(); return 92;} /* '\\' for \ */
+        if (ch=='"') {gch(); return '"';} /* "\"" for " */
+        if (ch==39)  {gch(); return 39;} /* '\'' for ' */
+        i = 3;
+        oct = 0;
+        while(((i--)>0)&(ch>='0')&(ch<='7'))
+                oct = (oct<<3) + gch() - '0';
+        if (i==2)
+                return gch();
+        else
+                return oct;
+        }
+

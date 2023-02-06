@@ -1,0 +1,422 @@
+* libs.txt R1.0 24/3/85
+* fopen for update bug fixed R1.1 12/6/88
+* Copyright Silicon Fen Software July 1984
+*
+* This file is automatically loaded when stdio.h is used
+*
+* Unix compatable standard (not file) i/o functions
+*
+ IF GETS
+* read a newline terminated string into s, replace the newline
+* with a null and return s.
+* char *gets(s)
+* char *s;
+gets jsr INBUFF
+ ldd #LINBUF
+ pshs a,b
+ ldb #13
+ sex
+ pshs a,b
+ lbsr index
+ leas 4,s
+ tfr d,x
+ clr ,x
+ ldd 2,s
+ pshs a,b
+ ldd #LINBUF
+ pshs a,b
+ lbsr strcpy
+ leas 4,s
+ rts
+ ENDIF
+*
+ IF PUTS
+* output string s, redirectable but allows use of escape to
+* halt output and return to abort program.
+* puts(s)
+* char *s;
+puts ldx 2,s
+PUTS1 lda ,x+
+ beq PUTS2
+ jsr PUTCHR
+ bra PUTS1
+PUTS2 jsr PCRLF
+ rts
+ ENDIF
+*
+* output a character
+* putchar(c)
+* char c;
+putchar lda 3,s
+ cmpa #$D
+ beq PUTCH1
+ jsr PUTCHR
+ rts
+PUTCH1 jsr PCRLF
+ rts
+*
+* input a character
+* int getchar()
+getchar jsr GETCHR
+ tfr a,b
+ clra
+ cmpb #4 control-D
+ beq GETCH1
+ rts
+GETCH1 ldd #-1 EOF
+ rts
+*
+ IF PERROR
+* print a string to the error stream - not redirectable
+* perror(s)
+* char *s;
+perror lda #$D
+ jsr OUTCH2
+ lda #$A
+ jsr OUTCH2
+ ldy 2,s
+PERR1 lda ,y+
+ beq PERR2
+ jsr OUTCH2
+ bra PERR1
+PERR2 lda #$D
+ jsr OUTCH2
+ lda #$A
+ jsr OUTCH2
+ rts
+ ENDIF
+*
+ IF PUTDEC
+* output in decimal via flex with f as space suppression flag
+* putdec(n,f) int n,f;
+putdec ldd 2,s
+ leax 4,s
+ jsr $CD39
+ rts
+ ENDIF
+*
+ IF PUTHEX
+* output in hex via flex
+* puthex(n) int n;
+puthex leax 2,s
+ jsr $CD45
+ rts
+ ENDIF
+*
+* file i/o routines
+*
+ IF FOPEN
+* open file
+* first find an fcb
+* FILE *findfcb()
+findfcb ldx #end+28 
+FINDF2 ldy #FMSBASE 
+FINDF3 cmpx ,y
+ beq FINDF4
+ ldy ,y
+ bne FINDF3 
+ leax -28,x 
+ tfr x,d 
+ rts
+FINDF4 leax 320,x 
+ bra FINDF2 
+*
+* FILE *fopen(name,type) - return 0 if can't open
+* char *name,*type; type = "r" read, "w" write, "u" update
+* type = "rb" binary read etc
+CONSDEV fcc "console.dev",0
+fopen ldd 4,s
+ pshs a,b
+ ldd #CONSDEV
+ pshs a,b
+ jsr strcmp
+ leas 4,s
+ bne FOPE7
+ ldb [2,s]
+ cmpb #'w
+ bne FOPE6
+ ldd #2 stdout
+ rts
+FOPE6 cmpb #'r
+ bne FOPE5
+ ldd #1 stdin
+ rts
+FOPE5 ldd #0
+ rts
+FOPE7 jsr findfcb 
+ pshs a,b 
+* *index( LINPTR=strcpy(LINBUF,name), 0 ) = '\n'; !!
+* loop back to this point if deleting existing file
+* because delete destroys the filename in the FCB.
+FOPE8 ldd #LINBUF strcpy(LINBUF,name)
+ pshs a,b
+ ldd 8,s
+ pshs a,b
+ jsr strcpy
+ leas 4,s
+ std LINPTR 
+ pshs a,b 
+ ldd #0
+ pshs a,b
+ jsr index
+ leas 4,s
+ pshs a,b 
+ ldb #$D
+ stb [,s++]
+ ldx ,s 
+ jsr GETFIL 
+ bcs FOPE99 
+ lda #1 
+ jsr SETEXT 
+ ldy 4,s 
+ ldb ,y 
+ cmpb #'r 
+ bne FOPE1
+ lda #1 
+ sta ,x
+ jsr FMS 
+ bne FOPE99 
+ bra FOPE9 
+FOPE1 cmpb #'u 
+ bne FOPE2
+ lda #3 
+ sta ,x
+ jsr FMS
+ bne FOPE99 
+ bra FOPE9
+FOPE2 cmpb #'w 
+ bne FOPE99 
+ lda #2 
+ sta ,x
+ jsr FMS
+ beq FOPE9 
+ lda 1,x 
+ cmpa #3 
+ bne FOPE99 
+ lda #12 
+ sta ,x
+ jsr FMS 
+ bne FOPE99
+ bra FOPE8 
+FOPE99 clra
+ clrb
+ leas 2,s 
+ rts 
+FOPE9 ldb 1,y 
+ cmpb #'b
+ bne FOPE91
+ lda #$FF
+ sta 59,x 
+FOPE91 puls a,b 
+ rts 
+ ENDIF
+*
+*
+ IF FCLOSE
+* close a file
+* fclose(stream)
+* FILE *stream;
+fclose ldx 2,s 
+ cmpx #3 
+ bls FCLO1
+ lda #4 
+ sta ,x
+ jsr FMS
+FCLO1 rts
+ ENDIF
+*
+ IF FEOF
+* return true (non-zero) if end of file on stream
+* int feof(stream)
+* FILE *stream;
+feof ldx 2,s
+ cmpx #3 
+ bls FEOF1
+ lda 1,x 
+ cmpa #8 
+ bne FEOF1
+ ldd #1 
+ rts
+FEOF1 ldd #0 
+ rts
+ ENDIF
+*
+ IF FERROR
+* return the error code for a stream
+* int ferror(stream)
+* FILE *stream;
+ferror ldx 2,s
+ cmpx #3
+ bls FERR1
+ ldb 1,x
+ sex
+ rts
+FERR1 ldd #0
+ rts
+ ENDIF
+*
+ IF CLEARERR
+* clear the error code on a stream
+* clearerr(stream)
+* FILE *stream;
+clearerr ldx 2,s
+ cmpx #3
+ bls CLER1
+ clr 1,x
+CLER1 rts
+ ENDIF
+*
+ IF REWIND
+* rewind a stream that is open for read (FLEX restriction)
+* rewind(stream)
+* FILE *stream;
+rewind ldx 2,s
+ cmpx #3
+ bls REWI1
+ lda #5 
+ sta ,x
+ jsr FMS
+REWI1 rts
+ ENDIF
+*
+ IF FGETC|FGETS
+* get a character from a file, return EOF (integer -1) if fail
+* int fgetc(stream)
+* FILE *stream;
+fgetc ldx 2,s
+ cmpx #3
+ bhi FGETC2
+ cmpx #1 stdin
+ bne FGETC1
+ jsr getchar
+ rts
+FGETC2 lda 2,x 
+ cmpa #1 
+ bne FGETC1
+ clr ,x 
+ jsr FMS
+ bne FGETC1
+ tfr a,b 
+ sex
+ rts
+FGETC1 ldd #-1 
+ rts
+ ENDIF
+*
+ IF FRDCHK
+* return 1 if a char can be read from the stream else 0
+* int frdchk(stream)
+* FILE *stream;
+frdchk ldx 2,s
+ cmpx #1 stdin
+ beq FRDCH1
+ cmpx #3
+ bhi FRDCH2
+FRDCH4 ldd #-1 EOF for output file
+ rts
+FRDCH1 jsr STAT
+ beq FRDCH3
+ ldd #1 char ready
+ rts
+FRDCH3 ldd #0 no char
+ rts
+FRDCH2 lda #1 read?
+ cmpa 2,x
+ bne FRDCH4
+ tst 1,x error?
+ bne FRDCH4
+ ldd #1
+ rts
+ endif
+*
+ IF FPUTC|FPUTS
+* put a character in a file, return the character or EOF if error
+* int fputc(c,stream)
+* char c;
+* FILE *stream;
+fputc ldx 2,s get FCB
+ cmpx #3
+ bhi FPUTC2
+ beq FPUTC3 
+ cmpx #2 
+ bne FPUTC1
+ ldd 4,s
+ pshs a,b
+ jsr putchar
+ leas 2,s
+ ldd 4,s
+ rts
+FPUTC3 lda 5,s
+ jsr OUTCH2 
+ cmpa #$D 
+ bne FPUTC4
+ lda #$A 
+ jsr OUTCH2
+FPUTC4
+ ldd 4,s
+ rts
+FPUTC2 lda 2,x 
+ cmpa #2 
+ bne FPUTC1
+ lda 5,s 
+ jsr FMS
+ bne FPUTC1
+ ldd 4,s 
+ rts
+FPUTC1 ldd #-1 
+ rts
+ ENDIF
+*
+ IF FGETS
+* char *fgets(s,n,stream)
+* char *s;
+* int n;
+* FILE *stream;
+fgets ldd 6,s
+ pshs a,b
+FGETS3 ldd 6,s 
+ subd #1
+ std 6,s 
+ beq FGETS1
+ ldd 4,s 
+ pshs a,b
+ jsr fgetc
+ leas 2,s
+ ldy 8,s 
+ stb ,y 
+ cmpd #-1
+ bne FGETS2
+ clr ,y
+ ldd #0
+ leas 2,s 
+ rts
+FGETS2 ldb ,y+
+ sty 8,s
+ cmpb #$D end of line
+ bne FGETS3
+FGETS1 ldy 8,s
+ clr ,y
+ puls a,b 
+ rts
+ ENDIF
+*
+ IF FPUTS
+* output a string to a stream
+* fputs(s,stream)
+* char *s;
+* FILE *stream;
+fputs
+FPUTS1 ldx 4,s 
+ ldb ,x+
+ beq FPUTS2
+ sex
+ pshs a,b
+ stx 6,s 
+ ldd 4,s 
+ pshs a,b
+ jsr fputc
+ leas 4,s
+ cmpd #-1 
+ bne FPUTS1
+FPUTS2 rts
+ ENDIF

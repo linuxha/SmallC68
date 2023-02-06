@@ -1,0 +1,1025 @@
+* libc01 R1.1b 16/11/85 Default runtime library for 6801 small-C compiler
+*
+* copyright 1985 by Silicon Fen Software
+*
+* C program entry point from flex for testing
+* call main program then return to flex
+START
+ if C6801
+ lds CSTACK
+ ldx #CDATA
+ endif
+ if C68091
+ lds MEMEND
+ ldx #edata
+ endif
+START2 cpx #end
+ beq START1
+ clr 0,x
+ inx
+ bra START2
+START1
+*
+ jsr main
+ jmp $CD03      back to flex warm start
+*
+* machine library routines, not C callable
+*
+ IF CC_ASR
+* arithmetic shift right 4,s by 2,s (assume +ve count in 3,s)
+CCASR tsx
+ ldad 4,x
+ inc 3,x
+CCASR3 dec 3,x
+ ble CCASR1
+ asra
+ rorb
+ bra CCASR3
+CCASR1 
+ rts
+ ENDIF
+*
+ IF CC_ASL
+* arithmetic shift left value at 4,s by count at 2,s
+CCASL tsx
+ ldad 4,x
+ inc 3,x
+CCASL3 dec 3,x
+ ble CCASL1
+ asld
+ bra CCASL3
+CCASL1 
+ rts
+ ENDIF
+*
+*
+ IF CC_MUL|BTOI|ITOB
+* multiply 2,s by 4,s - result in reg
+CCMUL 
+ ldaa #-1
+ psha
+ tsx
+ ldad 3,x
+ tsta
+ bmi CCMUL1
+ bne CCMUL2
+ tst 5,x
+ bne CCMUL2
+ ldaa 6,x
+ mul
+ ins
+ rts
+CCMUL1 coma
+ comb
+ addd #1
+ inc 0,x
+CCMUL2 pshd
+ ldad 5,x
+ bpl CCMUL3
+ coma
+ comb
+ addd #1
+ inc 0,x
+CCMUL3 pshd
+ bsr CCUMUL
+ ins
+ ins
+ ins
+ ins
+ tsx
+ tst 0,x
+ bne CCMUL4
+ coma
+ comb
+ addd #1
+CCMUL4
+ ins
+ rts
+
+* unsigned multiply of 2,s and 4,s
+CCUMUL tsx
+ ldaa 5,x
+ ldab 3,x
+ mul
+ pshd
+ tsx
+ ldaa 7,x
+ ldab 4,x
+ mul
+ beq CCUMU1
+ tba
+ clrb
+ addd 0,x
+ stad 0,x
+CCUMU1 tsx
+ ldaa 6,x
+ ldab 5,x
+ mul
+ beq CCUMU2
+ tba
+ clrb
+ addd 0,x
+ stad 0,x
+CCUMU2 puld
+ rts  
+ ENDIF
+*
+ IF CC_DIV|ITOB
+* divide routine
+* d = 4,s / 2,s , x = 4,s % 2,s
+CCDIV clra
+ psha
+ tsx
+ ldad 3,x
+ bpl DPOSA
+ com 0,x
+ NEGD
+DPOSA pshd
+ ldad 5,x
+ bpl DPOSB
+ com 0,x
+ NEGD
+DPOSB pulx
+ bsr CCUDIV
+ pshx
+ tsx
+ tst 7,x
+ bpl DPOSB2
+ NEGD
+DPOSB2 pshd
+ tst 2,x
+ bpl DPOSRSLT
+ ldad 0,x
+ NEGD
+ stad 0,x
+DPOSRSLT pulx
+ puld
+ ins
+ rts
+
+* unsigned divide
+* x = d/x, d = d % x
+CCUDIV 
+ cpx #0
+ beq DIVZERO
+ pshx
+ pshx
+ pshx
+ tsx
+ pshd
+ clr 4,x
+ clr 5,x
+ ldad #$FFFF
+ stad 2,x
+ puld
+DROLB asl 1,x
+ rol 0,x
+ inc 4,x
+ bcs DOVFL
+ pshd
+ subd 0,x
+ puld
+ bhs DROLB
+NXTDIV clc
+DOVFL ror 0,x
+ ror 1,x
+ pshd
+ subd 0,x
+ puld
+ blo DOKLS
+ subd 0,x
+DOKLS
+ rol 3,x
+ rol 2,x
+ dec 4,x
+ bne NXTDIV
+ com 3,x
+ com 2,x
+ ldx 2,x
+ ins
+ ins
+ ins
+ ins
+ ins
+ ins
+ rts
+DIVZERO ldad #$7FFF     simply return maximum possible result on div by zero
+ rts
+ ENDIF
+*
+ if C68091      stubs for 6801 under flex9
+*
+ IF EXIT
+* exit to flex
+exit jmp WARMS
+ ENDIF
+*
+ IF SYSTEM
+* not implemented
+system
+ rts
+ ENDIF
+*
+ endif
+*
+* Unix compatible string handling functions
+*
+ IF STRCAT
+* append s2 onto the end of s1, return pointer to s1
+* char *strcat(s1,s2)
+* char *s1,*s2;
+strcat FUNC 2
+ GETWS  4
+ PUSH
+ GETWS  6
+ PUSH
+ CALL strlen,2
+ INCS 2
+ ADDS
+ PUSH
+ GETWS  4
+ PUSH
+ CALL strcpy,4
+ INCS 4
+ GETWS  4
+ RET
+ ENDIF
+*
+ IF STRNCAT
+* append at most n chars of s2 onto s1, return s1
+* char *strncat(s1,s2,n)
+* char *s1,*s2;
+* int n;
+strncat FUNC 3
+ GETWS  6
+ PUSH
+ GETWS  8
+ PUSH
+ CALL strlen,2
+ INCS 2
+ ADDS
+ PUSH
+ GETWS  6
+ PUSH
+ GETWS  6
+ PUSH
+ CALL strncpy,6
+ INCS 6
+ GETWS  6
+ RET
+ ENDIF
+*
+ IF STRCMP
+* compare two strings and return whether s1 is less equal or greater
+* than s2 in an integer ( -ve, zero or +ve )
+* int strcmp(s1,s2)
+* char *s1,*s2;
+strcmp FUNC 2
+ INCS -2-2
+SCMP6
+ GETLOC 2
+ PUSH
+ GETLOC 10
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ GETBI
+ PUTSW
+ PUSH
+ GETLOC 2
+ PUSH
+ GETLOC 10
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ GETBI
+ PUTSW
+ CCEQ
+ NTST SCMP7
+ GETWS  2
+ PUSH
+ IMMED 0
+ CCEQ
+ NTST SCMP8
+ IMMED 0
+ INCS 4
+ RET
+SCMP8
+ GOTO SCMP6
+SCMP7
+ GETWS  2
+ PUSH
+ GETWS  2
+ SUBS
+ PUSH
+ CALL sign,2
+ INCS 2+4
+ RET
+ ENDIF
+*
+ IF STRNCMP
+* compare as in strcmp but at most n characters
+* int strncmp(s1,s2,n)
+* char *s1,*s2;
+* int n;
+strncmp FUNC 3
+ INCS -2-2
+SNCM9
+ GETLOC 2
+ PUSH
+ GETLOC 12
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ GETBI
+ PUTSW
+ PUSH
+ GETLOC 2
+ PUSH
+ GETLOC 12
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ GETBI
+ PUTSW
+ CCEQ
+ NTST SNCM10
+ GETLOC 6
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ INCD 1
+ PUSH
+ IMMED 0
+ CCLE
+ NTST SNCM11
+ IMMED 0
+ INCS 4
+ RET
+SNCM11
+ GETWS  2
+ PUSH
+ IMMED 0
+ CCEQ
+ NTST SNCM12
+ IMMED 0
+ INCS 4
+ RET
+SNCM12
+ GOTO SNCM9
+SNCM10
+ GETWS  2
+ PUSH
+ GETWS  2
+ SUBS
+ PUSH
+ CALL sign,2
+ INCS 2+4
+ RET
+ ENDIF
+*
+ IF SIGN|STRCMP|STRNCMP
+* return sign of n
+* int sign(n)
+* int n;
+sign FUNC 1
+ GETWS  2
+ PUSH
+ IMMED 0
+ CCLT
+ NTST SIGN1
+ IMMED -1
+ RET
+SIGN1
+ GETWS  2
+ PUSH
+ IMMED 0
+ CCNE
+ RET
+ ENDIF
+*
+ IF STRCPY|STRCAT
+* copy string s2 to string s1 and return pointer to s1
+* char *strcpy(s1,s2)
+* char *s1,*s2;
+ if M6811       use y reg for fast copy
+strcpy
+ tsx
+ ldy 2,x
+ ldx 4,x
+SCP2 ldb ,y
+ stb ,x
+ beq SCP1
+ inx
+ iny
+ bra SCP2
+SCP1 tsx
+ ldad 2,x       ret s1
+ rts
+ else
+strcpy FUNC 2   y reg not available
+ INCS -2
+ GETLOC 0
+ PUSH
+ GETWS  8
+ PUTSW
+SCP2
+ GETLOC 0
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ PUSH
+ GETLOC 6
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ GETBI
+ PUTSB
+ TEST SCP3
+ GOTO SCP2
+SCP3
+ GETWS  6
+ INCS 2
+ RET
+ endif  for M6811
+ ENDIF
+*
+ IF STRNCPY|STRNCAT
+* copy at most n characters
+* char *strncpy(s1,s2,n)
+* char *s1,*s2;
+* int n;
+strncpy FUNC 3
+ INCS -2
+ GETLOC 0
+ PUSH
+ GETWS  10
+ PUTSW
+SNCP4
+ GETLOC 4
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ INCD 1
+ PUSH
+ IMMED 0
+ CCGT
+ PUSH
+ GETLOC 2
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ PUSH
+ GETLOC 10
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ GETBI
+ PUTSB
+ PUSH
+ IMMED 0
+ CCNE
+ ANDS
+ TEST SNCP5
+ GOTO SNCP4
+SNCP5
+ GETLOC 0
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ PUSH
+ IMMED 0
+ PUTSB
+ GETWS  8
+ INCS 2
+ RET
+ ENDIF
+*
+ IF STRLEN|STRCAT|STRNCAT
+* return number of characters in string s
+* int strlen(s)
+* char *s;
+strlen tsx
+ ldx 2,x
+ ldad #0
+STRLE1 tst 0,x
+ beq STRLE2
+ inx
+ addd #1
+ bra STRLE1
+STRLE2 rts
+ ENDIF
+*
+ if INDEX
+* return a pointer to the first occurrence of char c in s
+* char *index(s,c)
+* char *s,c;
+index tsx
+ ldab 3,x
+ ldx 4,x
+INDEX1 cmpb 0,x
+ beq INDEX2
+ tst 0,x
+ beq INDEX3
+ inx
+ bra INDEX1
+INDEX3 ldad #0
+ rts
+INDEX2 txd
+ rts
+ endif
+*
+ IF RINDEX
+* return a pointer to the last occurrence of char c in s
+* char *rindex(s,c)
+* char *s,c;
+rindex FUNC 2
+ INCS -2
+ GETLOC 0
+ PUSH
+ IMMED 0
+ PUTSW
+RIND16
+ GETWS  4
+ PUSH
+ GETBSI 8
+ CCEQ
+ NTST RIND17
+ GETLOC 0
+ PUSH
+ GETWS  8
+ PUTSW
+RIND17
+RIND14 GETLOC 6
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ GETBI
+ TEST RIND15
+ GOTO RIND16
+RIND15
+ GETWS  0
+ INCS 2
+ RET
+ ENDIF
+*
+*
+ if FILL
+* fill buffer with constant.
+* char *fill(s,c,n)
+* char *s,c
+* int n;
+fill FUNC 3
+FILL18
+ GETLOC 2
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ INCD 1
+ TEST FILL19
+ GETLOC 6
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ PUSH
+ GETWS  6
+ PUTSB
+ GOTO FILL18
+FILL19
+ RET
+ endif
+*
+ if ABS
+* return absolute value
+* int abs(n)
+* int n;
+abs tsx
+ ldad 2,x
+ bmi ABS1
+ rts
+ABS1 NEGD
+ rts
+ endif
+*
+ IF ITOB
+*itob(s,i,base)
+* integer to ascii, s=buffer, i=integer, base is -36..36, -ve for signed
+* needs proper multiply and divide routines
+*      char    *s;
+*      int     i,base;
+itob FUNC 3
+ INCS -2-2
+ GETLOC 0
+ PUSH
+ GETWS  12
+ PUTSW
+ GETWS  8
+ PUSH
+ IMMED 0
+ CCLT
+ PUSH
+ GETWS  8
+ PUSH
+ IMMED 0
+ CCLE
+ ANDS
+ TEST CCIB02
+ GETLOC 2
+ PUSH
+ GETWS  10
+ NEGD
+ PUTSW
+ GETLOC 0
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ PUSH
+ IMMED 45
+ PUTSB
+ GOTO CCIB03
+CCIB02
+ GETLOC 2
+ PUSH
+ GETWS  10
+ PUTSW
+CCIB03
+ GETWS  6
+ PUSH
+ IMMED 0
+ CCEQ
+ NTST CCIB04
+ GETLOC 6
+ PUSH
+ IMMED 10
+ PUTSW
+ GOTO CCIB05
+CCIB04
+ GETWS  6
+ PUSH
+ IMMED 0
+ CCLT
+ NTST CCIB06
+ GETLOC 6
+ PUSH
+ GETWS  8
+ NEGD
+ PUTSW
+CCIB06
+CCIB05
+ GETWS  2
+ PUSH
+ GETWS  8
+ CCGE
+ NTST CCIB07
+ GETLOC 0
+ PUSH
+ GETWS  2
+ PUSH
+ GETWS  4
+ PUSH
+ GETWS  8
+ PUSH
+ GETWS  14
+ DIVS
+ PUSH
+ GETWS  14
+ PUSH
+ CALL itob,6
+ INCS 6
+ ADDS
+ PUTSW
+CCIB07
+ GETWS  0
+ PUSH
+ GETWS  4
+ PUSH
+ GETWS  10
+ MODS
+ PUSH
+ IMMED 48
+ ADDS
+ PUTSB
+ PUSH
+ IMMED 57
+ CCGT
+ NTST CCIB08
+ GETWS  0
+ PUSH
+ GETBSI 2
+ PUSH
+ IMMED 7
+ ADDS
+ PUTSB
+CCIB08
+ GETWS  0
+ PUSH
+ GETWS  12
+ SUBS
+ PUSH
+ IMMED 1
+ ADDS
+ INCS 4
+ RET
+ ENDIF
+ IF BTOI
+* btoi(s,n,pinum,base)
+* ascii to integer, s=buffer,n=field width,pinum=*int for result,base to 36 
+* needs proper multiply routine
+*      char    *s;
+*      int     n, *pinum, base;
+btoi FUNC 4
+ INCS -2-2-2-2-2
+ GETLOC 0
+ PUSH
+ GETWS  20
+ PUTSW
+ GETLOC 8
+ PUSH
+ GETLOC 6
+ PUSH
+ IMMED 0
+ PUTSW
+ PUTSW
+CCBI09
+ GETWS  16
+ PUSH
+ IMMED 0
+ CCGT
+ PUSH
+ GETBSI 20
+ PUSH
+ IMMED 32
+ CCEQ
+ ANDS
+ TEST CCBI10
+ GETLOC 16
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ GETLOC 18
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ GOTO CCBI09
+CCBI10
+ GETWS  16
+ PUSH
+ IMMED 0
+ CCGT
+ NTST CCBI11
+ GETBSI 18
+ PUSH
+ IMMED 45
+ CCEQ
+ NTST CCBI12
+ GETLOC 4
+ PUSH
+ IMMED 1
+ PUTSW
+ GETLOC 18
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ GETLOC 16
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ GOTO CCBI13
+CCBI12
+ GETBSI 18
+ PUSH
+ IMMED 43
+ CCEQ
+ NTST CCBI14
+ GETLOC 18
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ GETLOC 16
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+CCBI14
+CCBI13
+CCBI11
+ GETWS  12
+ PUSH
+ IMMED 16
+ CCEQ
+ PUSH
+ GETWS  18
+ PUSH
+ IMMED 2
+ CCGE
+ ANDS
+ TEST CCBI15
+ GETBSI 18
+ PUSH
+ IMMED 48
+ CCEQ
+ PUSH
+ GETWS  20
+ PUSH
+ IMMED 1
+ ADDS
+ GETBI
+ PUSH
+ IMMED 120
+ CCEQ
+ PUSH
+ GETWS  22
+ PUSH
+ IMMED 1
+ ADDS
+ GETBI
+ PUSH
+ IMMED 88
+ CCEQ
+ ORS
+ ANDS
+ TEST CCBI16
+ GETLOC 18
+ PUSH
+ GETWS  20
+ PUSH
+ IMMED 2
+ ADDS
+ PUTSW
+ GETLOC 16
+ PUSH
+ GETWS  18
+ PUSH
+ IMMED 2
+ SUBS
+ PUTSW
+CCBI16
+CCBI15
+CCBI17
+ GETWS  16
+ PUSH
+ IMMED 0
+ CCGT
+ NTST CCBI18
+ GETLOC 2
+ PUSH
+ GETBSI 20
+ PUTSW
+ GETWS  2
+ PUSH
+ IMMED 48
+ CCGE
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 57
+ CCLE
+ ANDS
+ TEST CCBI19
+ GETLOC 6
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 48
+ SUBS
+ PUTSW
+ PUSH
+ GETWS  14
+ CCGE
+ NTST CCBI20
+ GOTO CCBI18
+CCBI20
+ GOTO CCBI21
+CCBI19
+ GETWS  2
+ PUSH
+ IMMED 65
+ CCGE
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 90
+ CCLE
+ ANDS
+ TEST CCBI22
+ GETLOC 6
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 55
+ SUBS
+ PUTSW
+ PUSH
+ GETWS  14
+ CCGE
+ NTST CCBI23
+ GOTO CCBI18
+CCBI23
+ GOTO CCBI24
+CCBI22
+ GETWS  2
+ PUSH
+ IMMED 97
+ CCGE
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 122
+ CCLE
+ ANDS
+ TEST CCBI25
+ GETLOC 6
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 87
+ SUBS
+ PUTSW
+ PUSH
+ GETWS  14
+ CCGE
+ NTST CCBI26
+ GOTO CCBI18
+CCBI26
+ GOTO CCBI27
+CCBI25
+ GOTO CCBI18
+CCBI27
+CCBI24
+CCBI21
+ GETLOC 8
+ PUSH
+ GETWS  10
+ PUSH
+ GETWS  16
+ MULS
+ PUSH
+ GETWS  10
+ ADDS
+ PUTSW
+ GETLOC 16
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ GETLOC 18
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ GOTO CCBI17
+CCBI18
+ GETWS  4
+ TEST CCBI28
+ GETWS  14
+ PUSH
+ GETWS  10
+ NEGD
+ PUTSW
+ GOTO CCBI29
+CCBI28
+ GETWS  14
+ PUSH
+ GETWS  10
+ PUTSW
+CCBI29
+ GETWS  18
+ PUSH
+ GETWS  2
+ SUBS
+ INCS 10
+ RET
+ ENDIF
+*
+* end of libc

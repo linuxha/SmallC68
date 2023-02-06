@@ -1,0 +1,873 @@
+* libc09 R1.1b 16/11/85 Default runtime library for FLEX9 6809 small-C compiler
+*
+* copyright July 1984 by Silicon Fen Software
+*
+* C program entry point from flex
+* call main program then return to flex
+START
+ lds MEMEND
+ leax edata,pcr
+ leay end,pcr
+ pshs y
+CCSTA cmpx ,s
+ bhs CCSTB
+ clr ,x+
+ bra CCSTA
+CCSTB leas 2,s
+*
+ if M_ARGS if main was defined with arguments need to get them
+ ldx #LINBUF
+ leay CCLINE,pcr
+ ldb #128
+STR1 lda ,x+
+ sta ,y+
+ decb
+ bne STR1
+ leax CCLINE,pcr
+ pshs x
+ ldd #13
+ pshs a,b
+ lbsr index
+ leas 4,s
+ tfr d,x
+ clr ,x
+ ldd #0
+ std CCARGC,pcr
+ leax CCLINE,pcr
+ lda #$20
+STR6 cmpa ,x+
+ beq STR6
+ tst ,-x
+ beq STR2
+ stx CCARGV,pcr
+ ldd #1
+ std CCARGC,pcr
+STR2 pshs x
+ clra
+ ldb #$20
+ pshs a,b
+ lbsr index
+ leas 4,s
+ tfr d,x
+ cmpx #0
+ beq STR5
+STR3 lda #$20
+ cmpa ,x
+ bne STR4
+ clr ,x+
+ bra STR3
+STR4 tst ,x
+ beq STR5
+ ldd CCARGC,pcr
+ aslb
+ rola
+ leay CCARGV,pcr
+ stx d,y
+ ldd CCARGC,pcr
+ addd #1
+ std CCARGC,pcr
+ cmpd #15
+ beq STR5
+ bra STR2
+STR5 ldd CCARGC,pcr
+ pshs a,b
+ leax CCARGV,pcr
+ pshs x
+ endif end of args code
+*
+ lbsr main
+ jmp WARMS
+*
+ if M_ARGS
+CCLINE rmb 128 Calling command line saved here
+CCARGC rmb 2 Count of number of arguments
+CCARGV rmb 2*15 Up to 15 argument pointers
+ endif
+*
+ if EXIT
+* C program emergency exit routine, status is 0 for ok
+* exit(status)
+* int status;
+exit ldd 2,s get status
+ jmp WARMS
+ endif
+*
+* machine library routines, not C callable
+*
+ IF CC_ASR
+* arithmetic shift right 4,s by 2,s
+CCASR ldd 4,s
+ beq CCASR1
+ tst 3,s
+CCASR3 ble CCASR1
+ asra
+ rorb
+ dec 3,s
+ bra CCASR3
+CCASR1 
+ rts
+ ENDIF
+*
+ IF CC_ASL
+* arithmetic shift left value at 4,s by count at 2,s
+CCASL ldd 4,s
+ beq CCASL1
+ tst 3,s
+CCASL3 ble CCASL1
+ aslb
+ rola
+ dec 3,s
+ bra CCASL3
+CCASL1 cmpd #0  set cc for return
+ rts
+ ENDIF
+*
+ IF CC_MUL|BTOI|ITOB
+* multiply 2,s by 4,s - result in reg
+CCMUL ldy #-1
+ ldd 2,s
+ tsta
+ bmi CCMUL1
+ bne CCMUL2
+ tst 4,s
+ bne CCMUL2
+ lda 5,s
+ mul
+ rts
+CCMUL1 coma
+ comb
+ addd #1
+ leay 1,y
+CCMUL2 pshs a,b
+ ldd 6,s
+ bpl CCMUL3
+ coma
+ comb
+ addd #1
+ leay 1,y
+CCMUL3 pshs a,b
+ lbsr CCUMUL
+ leas 4,s
+ cmpy #0
+ bne CCMUL4
+ coma
+ comb
+ addd #1
+CCMUL4 rts
+
+* unsigned multiply of 2,s and 4,s
+CCUMUL lda 5,s
+ ldb 3,s
+ mul
+ tfr d,x
+ lda 5,s
+ ldb 2,s
+ mul
+ beq CCUMU1
+ exg a,b
+ clrb
+ leax d,x
+CCUMU1 lda 4,s
+ ldb 3,s
+ mul
+ beq CCUMU2
+ exg a,b
+ clrb
+ leax d,x
+CCUMU2 tfr x,d
+ rts  note not C callable return
+ ENDIF
+*
+ IF CC_DIV|ITOB
+* divide routine
+* d = 4,s / 2,s , x = 4,s % 2,s
+CCDIV
+ clr ,-s
+ ldd 3,s
+ bpl DPOSA
+ sta ,s
+ NEGD
+DPOSA tfr d,x
+ ldd 5,s
+ bpl DPOSB
+ com ,s
+ NEGD
+DPOSB bsr CCUDIV
+ tst 5,s
+ bpl DPOSB2
+ NEGD
+DPOSB2 exg d,x
+ tst ,s+
+ bpl DPOSRSLT
+ NEGD
+DPOSRSLT rts
+
+* unsigned divide
+* x = d/x, d = d % x
+CCUDIV pshs u
+ leax ,x
+ beq DIVZERO
+ ldu #$FFFF
+ clr ,--s
+ pshs u,x
+DROLB asl 1,s
+ rol ,s
+ inc 4,s
+ bcs DOVFL
+ cmpd ,s
+ bhs DROLB
+NXTDIV andcc #$FE
+DOVFL ror ,s
+ ror 1,s
+ cmpd ,s
+ blo DOKLS
+ subd ,s
+DOKLS
+ rol 3,s
+ rol 2,s
+ dec 4,s
+ bne NXTDIV
+ com 3,s
+ com 2,s
+ ldx 2,s
+ leas 6,s
+ puls u,pc
+DIVZERO ldd #$7FFF
+ puls u,pc
+ ENDIF
+*
+ IF SYSTEM
+* system call. pass a command line to the operating system
+* and return the error status ( 0 = no errors ).
+* system( s )
+* char *s;
+system LDX 2,S
+ LDY #LINBUF
+ STY $CC14
+SYST1 LDA ,X+
+ STA ,Y+
+ BNE SYST1
+ LDA #$0D
+ STA ,-Y
+ JSR DOCMND
+ SEX
+ RTS
+ ENDIF
+*
+* Unix compatible string handling functions
+*
+ IF STRCAT
+* append s2 onto the end of s1, return pointer to s1
+* char *strcat(s1,s2)
+* char *s1,*s2;
+strcat ldd 4,s
+ pshs a,b
+ lbsr strlen
+ leas 2,s
+ addd 4,s
+ pshs a,b
+ ldd 4,s
+ pshs a,b
+ lbsr strcpy
+ leas 4,s
+ ldd 4,s
+ rts
+ ENDIF
+*
+ IF STRNCAT
+* append at most n chars of s2 onto s1, return s1
+* char *strncat(s1,s2,n)
+* char *s1,*s2;
+* int n;
+strncat ldd 6,s
+ pshs a,b
+ lbsr strlen
+ leas 2,s
+ addd 6,s
+ pshs a,b
+ ldd 6,s
+ pshs a,b
+ ldd 6,s
+ pshs a,b
+ lbsr strncpy
+ leas 6,s
+ ldd 6,s
+ rts
+ ENDIF
+*
+ IF STRCMP|FOPEN
+* compare two strings and return whether s1 is less equal or greater
+* than s2 in an integer ( -ve, zero or +ve )
+* int strcmp(s1,s2)
+* char *s1,*s2;
+strcmp ldx 4,s
+ ldy 2,s
+SCMP1 lda ,y+
+ cmpa ,x+
+ blt SCMP2
+ bgt SCMP3
+ tsta
+ bne SCMP1
+ clrb
+ rts
+SCMP2 ldd #1
+ rts
+SCMP3 ldd #-1
+ rts
+ ENDIF
+*
+ IF STRNCMP
+* compare as in strcmp but at most n characters
+* int strncmp(s1,s2,n)
+* char *s1,*s2;
+* int n;
+strncmp ldx 6,s
+ ldy 4,s
+SNCMP1 ldd 2,s
+ ble SNCMP4
+ subd #1
+ std 2,s
+ lda ,y+
+ cmpa ,x+
+ blt SNCMP2
+ bgt SNCMP3
+ tsta
+ bne SNCMP1
+SNCMP4 ldd #0
+ rts
+SNCMP2 ldd #1
+ rts
+SNCMP3 ldd #-1
+ rts
+ ENDIF
+*
+ IF STRCPY|STRCAT|GETS|FOPEN
+* copy string s2 to string s1 and return pointer to s1
+* char *strcpy(s1,s2)
+* char *s1,*s2;
+strcpy ldx 4,s
+ ldy 2,s
+STRCP1 lda ,y+
+ sta ,x+
+ bne STRCP1
+ ldd 4,s
+ rts
+ ENDIF
+*
+ IF STRNCPY|STRNCAT
+* copy at most n characters
+* char *strncpy(s1,s2,n)
+* char *s1,*s2;
+* int n;
+strncpy ldd 2,s
+ ldy 4,s
+ ldx 6,s
+ leax d,x
+ pshs x
+ ldx 8,s
+SNCP1 cmpx ,s
+ bhs SNCP2
+ lda ,y+
+ beq SNCP2
+ sta ,x+
+ bra SNCP1
+SNCP2 clr ,x+
+ cmpx ,s
+ blo SNCP2
+ leas 2,s
+ ldd 6,s
+ rts
+ ENDIF
+*
+ IF STRLEN|STRCAT|STRNCAT
+* return number of characters in string s
+* int strlen(s)
+* char *s;
+strlen ldx 2,s
+STRLE1 tst ,x+
+ bne STRLE1
+ leax -1,x
+ tfr x,d
+ subd 2,s
+ rts
+ ENDIF
+*
+ if INDEX|M_ARGS|GETS|FOPEN
+* return a pointer to the first occurrence of char c in s
+* char *index(s,c)
+* char *s,c;
+index ldx 4,s
+ ldd 2,s
+INDEX1 cmpb ,x
+ beq INDEX2
+ tst ,x+
+ bne INDEX1
+ ldd #0
+ rts
+INDEX2 tfr x,d
+ cmpd #0 set cc
+ rts
+ endif
+*
+ IF RINDEX
+* return a pointer to the last occurrence of char c in s
+* char *rindex(s,c)
+* char *s,c;
+rindex ldd #0
+ pshs a,b
+ ldx 6,s
+ ldd 4,s
+RIND1 cmpb ,x
+ beq RIND2
+ tst ,x+
+ bne RIND1
+ ldd ,s++
+ rts
+RIND2 stx ,s
+ tst ,x+
+ bne RIND1
+ ldd ,s++
+ rts
+ ENDIF
+*
+*
+ IF FILL 
+* fill buffer with constant.
+* char *fill(s,c,n)
+* char *s,c
+* int n;
+fill ldd 6,s
+ addd 2,s
+ pshs a,b
+ ldx 8,s
+ lda 7,s
+FILL1 cmpx ,s
+ bhs FILL2
+ sta ,x+
+ bra FILL1
+FILL2 leas 2,s
+ ldd 6,s
+ rts
+ ENDIF
+*
+ if SIGN
+* return sign of integer
+* int sign(n)
+* int n;
+sign ldd 2,s
+ bmi SIGN1
+ bpl SIGN2
+ rts
+SIGN1 ldd #-1
+ rts
+SIGN2 ldd #1
+ rts
+ endif
+*
+ if ABS
+* return absolute value
+* int abs(n)
+* int n;
+abs ldd 2,s
+ bmi ABS1
+ rts
+ABS1 NEGD
+ rts
+ endif
+*
+ IF ITOB
+*itob(s,i,base)
+* integer to ascii, s=buffer, i=integer, base is -36..36, -ve for signed
+*      char    *s;
+*      int     i,base;
+itob FUNC 3
+ INCS -2-2
+ GETLOC 0
+ PUSH
+ GETWS  12
+ PUTSW
+ GETWS  8
+ PUSH
+ IMMED 0
+ CCLT
+ PUSH
+ GETWS  8
+ PUSH
+ IMMED 0
+ CCLE
+ ANDS
+ TEST CCIB02
+ GETLOC 2
+ PUSH
+ GETWS  10
+ NEGD
+ PUTSW
+ GETLOC 0
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ DECD 1
+ PUSH
+ IMMED 45
+ PUTSB
+ GOTO CCIB03
+CCIB02
+ GETLOC 2
+ PUSH
+ GETWS  10
+ PUTSW
+CCIB03
+ GETWS  6
+ PUSH
+ IMMED 0
+ CCEQ
+ NTST CCIB04
+ GETLOC 6
+ PUSH
+ IMMED 10
+ PUTSW
+ GOTO CCIB05
+CCIB04
+ GETWS  6
+ PUSH
+ IMMED 0
+ CCLT
+ NTST CCIB06
+ GETLOC 6
+ PUSH
+ GETWS  8
+ NEGD
+ PUTSW
+CCIB06
+CCIB05
+ GETWS  2
+ PUSH
+ GETWS  8
+ CCGE
+ NTST CCIB07
+ GETLOC 0
+ PUSH
+ GETWS  2
+ PUSH
+ GETWS  4
+ PUSH
+ GETWS  8
+ PUSH
+ GETWS  14
+ DIVS
+ PUSH
+ GETWS  14
+ PUSH
+ CALL itob,6
+ INCS 6
+ ADDS
+ PUTSW
+CCIB07
+ GETWS  0
+ PUSH
+ GETWS  4
+ PUSH
+ GETWS  10
+ MODS
+ PUSH
+ IMMED 48
+ ADDS
+ PUTSB
+ PUSH
+ IMMED 57
+ CCGT
+ NTST CCIB08
+ GETWS  0
+ PUSH
+ GETBSI 2
+ PUSH
+ IMMED 7
+ ADDS
+ PUTSB
+CCIB08
+ GETWS  0
+ PUSH
+ GETWS  12
+ SUBS
+ PUSH
+ IMMED 1
+ ADDS
+ INCS 4
+ RET
+ ENDIF
+ IF BTOI
+* btoi(s,n,pinum,base)
+* ascii to integer, s=buffer,n=field width,pinum=*int for result,base to 36 
+*      char    *s;
+*      int     n, *pinum, base;
+btoi FUNC 4
+ INCS -2-2-2-2-2
+ GETLOC 0
+ PUSH
+ GETWS  20
+ PUTSW
+ GETLOC 8
+ PUSH
+ GETLOC 6
+ PUSH
+ IMMED 0
+ PUTSW
+ PUTSW
+CCBI09
+ GETWS  16
+ PUSH
+ IMMED 0
+ CCGT
+ PUSH
+ GETBSI 20
+ PUSH
+ IMMED 32
+ CCEQ
+ ANDS
+ TEST CCBI10
+ GETLOC 16
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ GETLOC 18
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ GOTO CCBI09
+CCBI10
+ GETWS  16
+ PUSH
+ IMMED 0
+ CCGT
+ NTST CCBI11
+ GETBSI 18
+ PUSH
+ IMMED 45
+ CCEQ
+ NTST CCBI12
+ GETLOC 4
+ PUSH
+ IMMED 1
+ PUTSW
+ GETLOC 18
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ GETLOC 16
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ GOTO CCBI13
+CCBI12
+ GETBSI 18
+ PUSH
+ IMMED 43
+ CCEQ
+ NTST CCBI14
+ GETLOC 18
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ GETLOC 16
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+CCBI14
+CCBI13
+CCBI11
+ GETWS  12
+ PUSH
+ IMMED 16
+ CCEQ
+ PUSH
+ GETWS  18
+ PUSH
+ IMMED 2
+ CCGE
+ ANDS
+ TEST CCBI15
+ GETBSI 18
+ PUSH
+ IMMED 48
+ CCEQ
+ PUSH
+ GETWS  20
+ PUSH
+ IMMED 1
+ ADDS
+ GETBI
+ PUSH
+ IMMED 120
+ CCEQ
+ PUSH
+ GETWS  22
+ PUSH
+ IMMED 1
+ ADDS
+ GETBI
+ PUSH
+ IMMED 88
+ CCEQ
+ ORS
+ ANDS
+ TEST CCBI16
+ GETLOC 18
+ PUSH
+ GETWS  20
+ PUSH
+ IMMED 2
+ ADDS
+ PUTSW
+ GETLOC 16
+ PUSH
+ GETWS  18
+ PUSH
+ IMMED 2
+ SUBS
+ PUTSW
+CCBI16
+CCBI15
+CCBI17
+ GETWS  16
+ PUSH
+ IMMED 0
+ CCGT
+ NTST CCBI18
+ GETLOC 2
+ PUSH
+ GETBSI 20
+ PUTSW
+ GETWS  2
+ PUSH
+ IMMED 48
+ CCGE
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 57
+ CCLE
+ ANDS
+ TEST CCBI19
+ GETLOC 6
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 48
+ SUBS
+ PUTSW
+ PUSH
+ GETWS  14
+ CCGE
+ NTST CCBI20
+ GOTO CCBI18
+CCBI20
+ GOTO CCBI21
+CCBI19
+ GETWS  2
+ PUSH
+ IMMED 65
+ CCGE
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 90
+ CCLE
+ ANDS
+ TEST CCBI22
+ GETLOC 6
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 55
+ SUBS
+ PUTSW
+ PUSH
+ GETWS  14
+ CCGE
+ NTST CCBI23
+ GOTO CCBI18
+CCBI23
+ GOTO CCBI24
+CCBI22
+ GETWS  2
+ PUSH
+ IMMED 97
+ CCGE
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 122
+ CCLE
+ ANDS
+ TEST CCBI25
+ GETLOC 6
+ PUSH
+ GETWS  4
+ PUSH
+ IMMED 87
+ SUBS
+ PUTSW
+ PUSH
+ GETWS  14
+ CCGE
+ NTST CCBI26
+ GOTO CCBI18
+CCBI26
+ GOTO CCBI27
+CCBI25
+ GOTO CCBI18
+CCBI27
+CCBI24
+CCBI21
+ GETLOC 8
+ PUSH
+ GETWS  10
+ PUSH
+ GETWS  16
+ MULS
+ PUSH
+ GETWS  10
+ ADDS
+ PUTSW
+ GETLOC 16
+ PUSH
+ GETWI
+ DECD 1
+ PUTSW
+ GETLOC 18
+ PUSH
+ GETWI
+ INCD 1
+ PUTSW
+ GOTO CCBI17
+CCBI18
+ GETWS  4
+ TEST CCBI28
+ GETWS  14
+ PUSH
+ GETWS  10
+ NEGD
+ PUTSW
+ GOTO CCBI29
+CCBI28
+ GETWS  14
+ PUSH
+ GETWS  10
+ PUTSW
+CCBI29
+ GETWS  18
+ PUSH
+ GETWS  2
+ SUBS
+ INCS 10
+ RET
+ ENDIF
+*
+* end of libc

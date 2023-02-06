@@ -1,0 +1,62 @@
+* libdef09 R1.1 19/8/85  Define runtime library for FLEX9 6809 small-C compiler
+*
+* copyright 1985 by Silicon Fen Software
+*
+C6809   set     1
+C6801   set     0
+C68091  set     0
+*
+* macro's and FLEX constants
+        lib     libm09       machine library and macros
+        lib     libf09       flex equates for i/o etc
+*
+* set library files for libload
+LIBC    EQU     1            default library always loaded
+LIBS    SET     0            stdio.h file i/o library
+LIBG    SET     0            plot.h  graphics library
+LIBH    SET     0            hardware.h  hardware access library (not used)
+LIBA    SET     0            ctype.h  ascii tests and conversions library
+LIBP    SET     0            printf etc library auto loaded if printf used
+* enable required library functions
+* the following routines are in libc - default library
+FILL    SET     0
+EXIT    SET     0
+SYSTEM  SET     0
+STRCAT  SET     0
+STRNCAT SET     0
+STRCMP  SET     0
+STRNCMP SET     0
+STRCPY  SET     0
+STRNCPY SET     0
+STRLEN  SET     0
+INDEX   SET     0
+RINDEX  SET     0
+SIGN    SET     0
+ABS     SET     0
+BTOI    SET     0
+ITOB    SET     0
+* the following routines are in libs - file i/o using stdio. 
+FOPEN   SET     0
+FCLOSE  SET     0
+FEOF    SET     0
+FERROR  SET     0
+CLEARERR SET    0
+REWIND  SET     0
+FRDCHK  SET     0
+GETS    SET     0
+PUTS    SET     0
+PERROR  SET     0
+PUTDEC  SET     0
+PUTHEX  SET     0
+FPUTC   SET     0
+FGETC   SET     0
+FPUTS   SET     0
+FGETS   SET     0
+* in libp
+PRINTF  SET     0
+* machine library routines, not C callable
+_CCMUL  SET     0
+_CCDIV  SET     0
+_CCASR  SET     0
+_CCASL  SET     0
+* end of libdef09

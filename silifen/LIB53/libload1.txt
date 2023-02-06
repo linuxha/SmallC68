@@ -1,0 +1,26 @@
+* libload1 -  Load runtime library for 6801 small-C compiler
+*
+* copyright July 1985 by Silicon Fen Software
+*
+* load library files 
+*
+        IF LIBP              printf library
+        lib     libp         same for 6809 and 6801
+        ENDIF
+*
+        IF LIBC              default library
+        lib     libc01
+        ENDIF
+*
+        IF LIBS              stdio.h file i/o library
+        lib     libs01
+        ENDIF
+*
+        IF LIBH              hardware.h  hardware access library
+        lib     libh01
+        ENDIF
+*
+        IF LIBA              ctype.h  ascii tests and conversions library
+        lib     liba01
+        ENDIF
+*

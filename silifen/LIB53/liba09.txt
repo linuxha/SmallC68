@@ -1,0 +1,124 @@
+* liba - ascii character classification and transformation routines
+*
+* Unix C compatible but implemented as assembler subroutines for speed
+* on unix these are C macro's.
+*
+* Copyright October 1984 by Silicon Fen Software
+*
+* use #include "ctype.h" in a C program to use these routines
+*
+        IF TOUPPER
+* char toupper(c)    convert character to upper case
+*       char c;
+toupper ldb 3,s
+        sex
+        cmpb #'a
+        blt  TOUP1
+        cmpb #'z
+        bgt  TOUP1
+        subb #'a-'A
+TOUP1   rts
+        ENDIF
+*
+*
+        IF TOLOWER
+* char  tolower(c)   convert character to lower case
+*       char c;
+tolower ldb 3,s
+        sex
+        cmpb #'A
+        blt  TOLO1
+        cmpb #'Z
+        bgt  TOLO1
+        addb #'a-'A
+TOLO1   rts
+        ENDIF
+*
+*       IF TOASCII
+*       ENDIF
+*
+        IF ISALPHA
+* int isalpha(c)  return non-zero if character is alphabetic
+*       char c;
+isalpha ldb 3,s
+        sex
+        cmpb #'A
+        blt  ISALP1
+        cmpb #'z
+        bgt  ISALP1
+        cmpb #'a
+        bge  ISALP2
+        cmpb #'Z
+        bgt  ISALP1
+ISALP2  ldd  #1
+        rts
+ISALP1  ldd  #0
+        rts
+        ENDIF
+*
+*
+        IF ISDIGIT
+* int isdigit(c)  return non-zero if character is a digit
+*       char c;
+isdigit ldb 3,s
+        sex
+        cmpb #'0
+        blt  ISDIG1
+        cmpb #'9
+        bgt  ISDIG1
+        ldd  #1
+        rts
+ISDIG1  ldd  #0
+        rts
+        ENDIF
+*
+*
+        IF ISUPPER
+* int isupper(c)  return non-zero if character is upper case
+*       char c;
+isupper ldb 3,s
+        cmpb #'A
+        blt  ISUPP1
+        cmpb #'Z
+        bgt  ISUPP1
+        ldd  #1
+        rts
+ISUPP1  ldd  #0
+        rts
+        ENDIF
+*
+*
+        IF ISLOWER
+* int islower(c)  return non-zero if character is lower case
+*       char c;
+islower ldb 3,s
+        cmpb #'a
+        blt  ISLOW1
+        cmpb #'z
+        bgt  ISLOW1
+        ldd  #1
+        rts
+ISLOW1  ldd  #0
+        rts
+        ENDIF
+*
+*       IF ISXDIGIT
+*       ENDIF
+*
+*       IF ISALNUM
+*       ENDIF
+*
+*       IF ISSPACE
+*       ENDIF
+*
+*       IF ISPUNCT
+*       ENDIF
+*
+*       IF ISPRINT
+*       ENDIF
+*
+*       IF ISCNTRL
+*       ENDIF
+*
+*       IF ISASCII
+*       ENDIF

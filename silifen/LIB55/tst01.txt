@@ -1,0 +1,182 @@
+ opt exp,con
+ lib libdef
+*
+ CSEG
+
+ puld
+
+ pshd
+
+main FUNC 0
+
+ GETB varb
+
+ GETW varw
+
+ GETLOC 0
+
+ GETLOC 10
+
+ GETLOC 300
+
+ PUTB varb
+
+ PUTW varw
+
+ PUTSB
+
+ PUTSW
+
+ GETBI
+
+ GETWI
+
+ PUSH
+
+ SWAPS
+
+ SWAP
+
+ GWWI varw
+
+ GWBI varw
+
+ GETBS 0
+
+ GETBS 100
+
+ GETBS 200
+
+ GETBS 1000
+
+ PUTBS 0
+
+ PUTBS 100
+
+ PUTBS 1000
+
+ GETWS 0
+
+ GETWS 100
+
+ GETWS 1000
+
+ PUTWS 0
+
+ PUTWS 100
+
+ PUTWS 1000
+
+ GETWSI 0
+
+ GETWSI 100
+
+ GETWSI 1000
+
+ GETBSI 0
+
+ GETBSI 100
+
+ GETBSI 1000
+
+ CALL main,2
+
+ RET
+
+ GOTO main
+
+ TEST main
+
+ GETGLB varw
+
+ IMMED 1234
+
+ CALLS 2
+
+ PULL
+
+ INCS 0
+
+ INCS 4
+
+ INCS -4
+
+ INCS 100
+
+ INCS 1000
+
+ INCS -1000
+
+ SCALE 1
+
+ SCALE -1
+
+ ADDS
+
+ SUBS
+
+ MULS
+
+ DIVS
+
+ MODS
+
+ ORS
+
+ EORS
+
+ ANDS
+
+ ASRS
+
+ ASLS
+
+ INCD 10
+
+ DECD 10
+
+ COMD
+
+ NEGD
+
+ CCEQ
+
+ CCNE
+
+ CCLT
+
+ CCGT
+
+ CCLE
+
+ CCGE
+
+ CCULT
+
+ CCULE
+
+ CCUGT
+
+ CCULE
+
+ CCUGT
+
+ CCUGE
+
+ RET
+
+ EXTF start,START
+
+ EXTV bert
+ PUB main
+ lib libload
+etext
+ LSEG
+cc1 fcb 50,50,50,0
+edata
+ DSEG
+varb rmb 1
+varw rmb 2
+end
+ end START
+

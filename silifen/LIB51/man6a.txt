@@ -1,0 +1,545 @@
+,pn 39
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Runtime Library
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+`$1B,'!,24`
+,ce 2
+6. Runtime Library
+
+`$1B,'!,8`
+,pp
+The compiler generates code in a processor independent macro language which was created by Silicon Fen Software so that one copy of the compiler could be used to generate programs for several different micros. The host system is currently FLEX-9 and macros are provided for 6809 code generation. The macros are defined in LIBM09.TXT  and, for 6809 use some of the macros call subroutines to perform multiplication, division, remainder and shifts. All other code is generated in line. There is an option which can be invoked by editing a line in LIBM09.TXT that generates position independant code. The default is to generate position depandant code because smaller, faster, programs are produced.
+,pp
+For 6809 use, a range of useful functions are defined which provide high performance string handling and i/o operations. Most of the predefined functions in the runtime library are in handcoded assembler which has been designed to save space in the final program and to execute  as fast as possible. All assembly code functions are position independant so that they can be used with the position independant option described above. The available functions have been designed where possible to be compatible with the Unix C runtime library. The extent of compatibility is noted for each function in the documentation below.
+,pp
+A default set of functions is available in all programs but some operations (notably i/o) require a C header file to be #included before they can be used. The header file required is noted for each function. (These header file requirements are, as far as possible, compatible with unix).
+
+,pg
+
+NAME
+        exit            program exit routine
+
+SYNTAX
+        exit(status)
+                int     status;
+
+DESCRIPTION
+,pp
+Exit can be called at any time in a program, it will never return to the calling function and exits directly to the FLEX command prompt +++. Any open files are closed cleanly by FLEX. The status passed to exit is returned to the operating system, and for unix compatibility it should be non-zero if the program has encountered a fatal error condition. FLEX currently ignores the error code.
+
+EXAMPLE
+
+if (panic)
+        exit(1);
+
+
+COMPATIBILITY
+,pp
+Completely Unix compatible.
+
+,pg
+
+NAME
+        system          invoke a FLEX command
+
+SYNTAX
+        system(command)
+                char *command;
+
+DESCRIPTION
+,pp
+This function invokes the command as if the string had been typed on the command line. If the command caused a FLEX error then system will return a non zero value.
+,pp
+Be very careful with this command. It is unix compatible but in FLEX, unlike unix, a command may be invoked which overlays the current program in memory and causes the computer to crash when it returns to the program that called system. Commands that load into the FLEX transient program area at address C100 upwards are usually OK since small-C programs load from address 0000 upwards with the stack going from the top of available memory (MEMEND) downwards.
+,pp
+Some useful commands that are OK include LIST.CMD, SAVE.CMD, DIR.CMD, CAT.CMD, BUILD.CMD, TIME.CMD (Microbox), and all the Interactive graphics (IG) commands available for the Microbox from Silicon Fen Software.
+,pp
+Some to avoid include EDIT.CMD, ASMB.CMD (obviously), and COPY.CMD which uses low memory as a copy buffer.
+
+
+EXAMPLE
+
+system("list fred.txt");
+
+This causes fred.txt to be listed on the screen then returns to the program.
+
+
+COMPATIBILITY
+,pp
+Completely Unix compatible.
+
+,pg
+
+
+,ce 1
+String Handling Routines
+,pp
+All these routines work on strings up to 32K long which are arrays of characters with a null (zero) termination character. The string parameters are simply pointers to a character in a null terminated array, they do not have to point to the first character in an array. The routines which write into a string do not check to see if there is enough space in the array to store the string.
+
+
+NAME
+        strcat,strncat            concatenate strings
+
+SYNTAX
+        char *strcat(s1,s2)
+                char *s1,*s2;
+
+        char *strncat(s1,s2,n)
+                char *s1,*s2;
+                int  n;
+
+DESCRIPTION
+,pp
+Strcat appends a copy of string s2 onto the end of string s1. Strncat copies at most n characters of s2. Both functions return a pointer to the result (i.e. s1). Make sure that s1 is not a constant string but is a pointer into an array with enough space for s2 to fit. A null terminator is appended to the concatenated string in s1.
+
+
+EXAMPLE
+
+char name[20];          /* define name to be big enough */
+
+name[0] = 0;            /* set name as an empty string */
+
+strcat(name,"fred ");           /* name is "fred " */
+
+strncat(name,"bloggs",4);       /* name is "fred blog" */
+
+strncat(name,"gs",10);          /* name is "fred bloggs" */
+
+
+COMPATIBILITY
+,pp
+Completely Unix compatible.
+
+,pg
+
+NAME
+        strcmp,strncmp          compare strings
+        strcpy, strncpy         copy strings
+
+SYNTAX
+        int strcmp(s1,s2)
+                char *s1,*s2;
+
+        int strncmp(s1,s2,n)
+                char *s1,*s2;
+                int  n;
+
+        char *strcpy(s1,s2)
+                char *s1,*s2;
+
+        char *strncpy(s1,s2,n)
+                char *s1,*s2;
+                int  n;
+
+DESCRIPTION
+,pp
+Strcmp compares two strings and returns whether s1 is less than equal to or greater than s2 in an integer (negative, zero or positive) using the ascii values for the characters. Strncmp only compares up to n characters.
+,pp
+Strcpy copies s2 to s1 and returns s1 (as if it was s1=s2). Strncpy only copies up to n characters and pads with nulls if s2 is less than n characters long. Make sure that s1 is not a constant string and that there is enough space for s2 to be copied into.
+
+EXAMPLE
+
+strcmp("hello","hello");        returns 0 - equal strings
+strcmp("hello ","hello");       returns positive - s1 > s2
+strncmp("hell","hello",4);      returns 0 - equal up to 4
+strncmp("hell","hello",5);      returns negative - s1 < s2
+
+char str[10];
+strcpy(str,"hello");    /* str now contains "hello" */
+strncpy(str,"hello",4); /* str now contains "hell" */
+
+
+COMPATIBILITY
+,pp
+Completely Unix compatible.
+,pg
+
+NAME
+        strlen          get length of a string
+
+SYNTAX
+        int strlen(s)
+                char *s;
+
+DESCRIPTION
+,pp
+Strlen returns the number of characters present in a string (not including the null terminator). The length returned is an integer so this routine will only work on strings up to 32K long. (Should be long enough!).
+
+EXAMPLE
+
+strlen("hello");        /* returns 5 */
+
+
+COMPATIBILITY
+,pp
+Completely Unix compatible.
+
+,pg
+
+NAME
+        index, rindex           find character in string
+
+SYNTAX
+        char *index(s,c)
+                char *s,c;
+
+        char *rindex(s,c)
+                char *s,c;
+
+DESCRIPTION
+,pp
+Index returns a pointer to the first occurrence of character c in string s. If c is not found then NULL is returned (zero pointer). Rindex returns a pointer to the last occurrence of c in s (r for rightmost) or NULL if c was not found. Both are Unix compatible.
+
+EXAMPLE
+
+index("hello",'l');     returns a pointer to the first l 
+
+rindex("hello",'l');    returns a pointer to the second l
+
+index("hello",'m');     returns zero.
+
+
+COMPATIBILITY
+,pp
+These are compatible with most versions of Unix including Unix V7 and System III, but Unix BSD 4.2 (used on VAX and virtual memory 68010 based systems) redefines index and rindex and substitutes strchr and strrchr to perform the same function. One small-C compiler (QC on the Sinclair QL) uses the BSD 4.2 convention but most use the V7 convention.
+
+,pg
+
+NAME
+        fill            fill array with constant
+
+SYNTAX
+        fill(s,c,n)
+                char *s,c;
+                int  n;
+
+
+DESCRIPTION
+,pp
+The character c (8 bit value) is written n times into the array pointed to by s.
+
+EXAMPLE
+
+char buf[BUFSIZE];     /* buf indexed from 0 to BUFSIZE-1 */
+
+fill(buf,' ',BUFSIZE); /* to fill a buffer with spaces */
+
+buf[BUFSIZE-1] = 0;    /* need to add a null terminator on
+                        top of last space if required */
+
+
+COMPATIBILITY
+,pp
+Compatible with the Whitesmiths portable C library. There is no equivalent in the standard Unix runtime library.
+,pp
+The code below can be used if fill is needed on another machine.
+
+fill(s,c,n)
+        char *s,c;
+        int n;
+        {
+        while(n-- > 0)
+                *s++ = c;
+        }
+
+,pg
+
+,ce 1
+I/O Routines
+,pp
+These routines interface directly with the FLEX I/O calls for maximum speed and minimum size. A more Unix like  implementation would go via the buffered i/o channels stdin and stdout but FLEX does not buffer terminal I/O so the purist approach was abandoned. End of file from the terminal is signalled by typing control-D (for Unix compatibility) but this only works for character I/O routines because FLEX throws away control characters when a complete line is input.
+
+,pg
+
+NAME
+        gets            get string from keyboard
+
+SYNTAX
+        #include "stdio.h"
+
+        char *gets(s)
+                char *s;
+
+DESCRIPTION
+,pp
+Gets reads a string into s from the keyboard. The string is terminated by a newline character (carriage return) which is replaced in s by a null terminator. Gets returns s if there were no problems or zero (null pointer) if it encountered an error or end of file character. The input is performed using the FLEX  INBUFF routine so that the TTYSET conventions are automatically supported. (delete character etc). The INBUFF routine however, throws away the control D end of file marker so gets cannot be used to detect it. (use getchar or fgets instead).
+
+
+COMPATIBILITY
+,pp
+Unix compatible at the source code level but implemented differently.
+
+
+NAME
+        puts            output string to screen
+
+SYNTAX
+        #include "stdio.h"
+
+        puts(s)
+                char *s;
+
+DESCRIPTION
+,pp
+String s is written to the screen using the standard FLEX  PUTCHR routine and a newline is added onto the end using the FLEX  PCRLF routine. This allows use of TTYSET to set screen width and depth, pause and abort.
+
+
+COMPATIBILITY
+,pp
+Unix compatible at the source code level but implemented differently.
+
+,pg
+
+NAME
+        putchar         output character to screen
+
+SYNTAX
+        #include "stdio.h"
+
+        int putchar(c)
+                char c;
+
+
+DESCRIPTION
+,pp
+Putchar is usually defined as putc(c,stdout) as a macro on Unix systems. For small-C however it interfaces directly to the FLEX  PUTCHR routine. The character c is output to the screen, taking account of the TTYSET parameters, unless it is a carriage return (EOL). When an EOL is passed to putchar the FLEX  PCRLF routine is called. This means that the screen output from C programs can be halted using escape.
+,pp
+Putchar returns the character c unless there is an error on output, when it returns EOF. The FLEX version cannot return EOF.
+
+COMPATIBILITY
+,pp
+Unix compatible.
+
+
+NAME
+        getchar         input character from keyboard
+
+SYNTAX
+        #include "stdio.h"
+
+        int getchar()        
+
+DESCRIPTION
+,pp
+Getchar inputs a character via the FLEX  GETCHR routine, An integer is returned which is equal to the character value unless the character was a control D. The control D is used to simulate end of file for Unix compatibility and the routine returns  EOF. EOF is equal to -1 (as an integer) and is #defined in the standard I/O header file, stdio.h. 
+
+
+COMPATIBILITY
+,pp
+Unix compatible.
+,pg
+
+NAME
+        perror          output an error message
+
+SYNTAX
+        perror(s)
+                char *s;
+
+DESCRIPTION
+,pp
+This routine outputs a newline then the string s then another newline. It uses the FLEX  OUTCH2 routine which is not redirected by the O and P commands so that the string will always go to the screen. It is provided as a convenient form of the sequence:
+
+        putc(EOL,stderr);
+        fputs(s,stderr);
+        putc(EOL,stderr);
+
+
+COMPATIBILITY
+,pp
+This is not Unix compatible since the unix routine of the same name outputs the last error encountered by the system as a text string preceded by s. The small-C version of perror may be upgraded at some time to use the FLEX  RPTERR and ERRORS.SYS mechanism to make it compatible.
+,pg
+,ce 1
+Integer Conversion Routines
+
+NAME
+        itob            convert integer to ascii in buffer
+
+SYNTAX
+        int itob(s, i, base)
+                char *s;
+                int  i, base;
+
+DESCRIPTION
+,pp
+The integer i is converted to a string starting at s but a null terminator is NOT added. The number of characters written into s is returned.
+,pp
+Base is used to determine the base of the output string. It has a range of -36 to 36 where negative bases give signed number conversion (base= -10 gives a range of "-32767" to "32767") and positive bases give unsigned conversion (base=16 gives a range of "0" to "FFFF"). Bases above hexadecimal use the rest of the alphabet up to 'Z' to produce up to base 36.
+
+EXAMPLE
+
+        int i;          /* declare variables */
+        char buf[20];
+
+        i = 127;        /* set up number to convert */
+        buf[ itob(buf,i,-10) ] = 0;     /* see below */
+        puts(buf);      /* output "127" to screen */
+,pp
+The funny looking line above calls itob to convert i in signed decimal to three characters in buf. Itoa returns the number of characters converted i.e. 3 and this is used to index into the buf array to add a null terminator after the third character. buf[0] is '1', buf[1] is '2', buf[2] is '7' and buf[3] is 0.
+,pp
+If the base (-10) above was replaced by 16 the output would be "7F". In base 36 the output would be "3S".
+
+COMPATIBILITY
+,pp
+This routine is not compatible with unix but is compatible with the Whitesmiths portable C library.
+,pg
+
+NAME
+        btoi            ascii buffer to integer
+
+SYNTAX
+        int btoi(s, n, pi, base)
+                char *s;
+                int  n, *pi, base;
+
+DESCRIPTION
+,pp
+This is the inverse of itob. It will convert a string s  into the integer pointed to by pi. Only up to n characters are converted and conversion stops if an illegal character is found. Base is the same as for itob but it should always be positive. The resulting integer is negated if a '-' is read as the first character in the string (leading spaces are skipped). If base=16 then a leading "0x" or "0X" will be skipped. ("0x" is the standard way of indicating a hex number in C).
+,pp
+A pointer to integer is used because the routine returns the number of characters converted.
+
+EXAMPLE
+        /* clever conversion routine */
+        getnum(s)
+                char *s;        /* convert this string */
+                {
+                int num,base;   /* into num in base */
+                if (*s == '0')  /* work out base */
+                        {
+                        base = 8; /* leading 0 for octal */
+                        if (toupper(*(s+1)) == 'X')
+                                base = 16;      /* hex */
+                        }
+                else
+                        base = 10;      /*default decimal*/
+                btoi(s, 8, &num, base); /*use upto 8 chars*/
+                return num;     /* return answer */
+                }
+
+COMPATIBILITY
+,pp
+This routine is only compatible with Whitesmiths C's btoi routine. Unix conversion routines do not have the base facility.
+,pg
+
+NAME
+        putdec                  output decimal number
+
+SYNTAX
+        putdec(n,f)
+                int n,f;
+
+DESCRIPTION
+,pp
+The value n is output to stdout as an unsigned decimal number with leading zero's suppressed. If f is non zero then spaces will be substituted for the leading zero's.
+
+
+EXAMPLE
+        putdec(123,0);
+        output is "123"
+        putdec(123,1);
+        output is "  123"
+
+COMPATIBILITY
+,pp
+Not Unix compatible. This routine calls the FLEX OUTDEC routine directly with f as the space suppression flag.
+
+
+NAME
+        puthex          output a hexadecimal number
+
+SYNTAX
+        puthex(n)
+                int n;
+
+DESCRIPTION
+,pp
+The value n is output to stdout as four hexadecimal digits.
+
+
+EXAMPLE
+        puthex(255);
+        output is "00FF"
+        puthex(-1);
+        output is "FFFF"
+
+
+COMPATIBILITY
+,pp
+Not Unix compatible. This routine calls the FLEX OUTADR routine directly.
+,pg
+
+NAME
+        toupper,tolower,        Character tests and
+        isalpha,isdigit,        conversions.
+        isupper,islower
+
+
+SYNTAX
+
+  #include "ctype.h"
+
+  char toupper(c)    convert character to upper case
+        char c;
+
+  char tolower(c)   convert character to lower case
+        char c;
+
+  int isalpha(c)  return non-zero if character is alphabetic
+        char c;
+
+  int isdigit(c)  return non-zero if character is a digit
+        char c;
+
+  int isupper(c)  return non-zero if character is upper case
+        char c;
+
+  int islower(c)  return non-zero if character is lower case
+        char c;
+
+
+DESCRIPTION
+,pp
+These routines provide fast character tests and conversions. They exist in LIBA.TXT which is automatically searched when ctype.h is #included so ctype.h must be used for these routines to be available.
+
+EXAMPLE
+        /* fold input to lower case */
+
+        #include "stdio.h"
+        #include "ctype.h"
+
+        main()
+                {
+                char c;
+                while((c=getchar()) != EOF)
+                        if (isupper(c))
+                                putchar(tolower(c));
+                        else
+                                putchar(c);
+                }
+
+COMPATABILITY
+,pp
+Unix compatible but implemented differently.

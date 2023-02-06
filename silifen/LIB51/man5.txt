@@ -1,0 +1,107 @@
+,pn 37
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Differences from Standard C
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+`$1B,'!,24`
+,ce 2
+5. Differences from Standard C
+
+`$1B,'!,8`
+,pp
+The differences from standard C fall into two classes. The first is extensions to standard C and implementation differences, the second is the sections of standard C which do not exist for small-C.
+,pp
+The main extension from standard C is the #asm and #endasm directives. Because these allow native assembler to be included in C programs use of this directive means that small-C programs may not be ported to other processors. Some of the runtime library routines are FLEX specific and the graphics library is Microbox ][ specific so use of these routines will prevent programs from being ported.
+,pp
+The runtime library contains the essential standard C routines but some of them are implemented differently from the original Unix implementation. In particular, the low level file handling routines "open", "write" etc are not provided. Some of the higher level routines are used instead, e.g. "fopen". The compatibility of each routine is noted in section 6.
+,pp
+Function parameters are pushed on the stack from left to right in small-C and from right to left in Unix C. This affects functions like printf which use the first parameter to determine how many other parameters there are. In Unix C the last thing pushed was the first parameter so it is at a known stack offset. For small-C this parameter is an unknown number of bytes up the stack! This is fixed by passing the number of bytes that were pushed on the stack in a register. This is wasteful for most functions so the number is only put in the register for function calls to printf or to a pointer to function. This is handled by the CALL macro, see the file LIBM09.TXT for details. If another function needs the byte count then LIBM09.TXT must be modified.  
+,pp
+The missing features from standard C are partially detailed in the small-C language definition but a summary follows:
+,in 8
+
+Missing keywords:
+        float           extern          unsigned
+        double          register        auto
+        struct          typedef         switch
+        union           static          case
+        long            goto            default
+        short           sizeof          entry
+        enum
+
+Missing constants:
+        Long constants (32 bit)
+        Floating point constants
+
+Missing storage classes:
+        static
+        register
+
+
+Missing types:
+        short integers          (same as int)
+        unsigned integers
+        long (32 bit) integers
+        float (32 bit) floating point
+        double (64 bit) floating point
+        structures of types
+        unions of types
+
+
+Missing derived types:
+        Functions that don't return integers
+        Pointers to pointers
+        Arrays of arrays (multiple dimensions)
+
+
+Missing operators:
+        sizeof(type)
+        ! boolean not.
+        && boolean and
+        || boolean or
+        op= assignment operators
+
+
+Missing statements:
+        switch(expr) case const: ; default: ;
+        goto label;
+        label:
+
+
+Missing preprocessor directives:
+        #define with parameter substitution
+        #undef
+        #ifdef  (next release)
+        #ifndef (next release)
+        #else   (next release)
+        #endif  (next release)
+        #line
+        #include <> (use "" instead)
+,in 0
+
+,pp
+The missing statements can be simulated using constructs given in section 4 of this manual. Floating point will not be added to 16 bit versions of this compiler but may be added to the 32 bit 68000 version which is under development. If a more complete version of C is needed then James McCosh C is recommended. JMC's C costs a lot more, only targets to the 6809, takes a lot longer to compile a program and has a much bigger minimum size of program than small-C but it includes almost all the missing features and generates faster code than small-C.
+,pp
+C is still an evolving language and new features are added to the most advanced C compilers every few years. Some features that have been added since the Kernighan and Ritchie book in 1978 are: enumerated types ( a la pascal ), functions returning structures and assignment of structures. These features are present in most Unix C compilers.

@@ -1,0 +1,15 @@
+* Small-C R1.1 27/7/85  Silicon Fen Software
+*
+* equates for use with 6801
+*
+ opt exp        expand macro's in assembly listing
+*
+* memory map for very basic 68701 with 128bytes RAM and 2k EPROM
+*CCODE  equ $F800         start code at base of EPROM
+*CDATA  equ $0080         start data after I/O locations
+*CSTACK equ $00FF         place stack at highest RAM location
+*
+* memory map for testing on 6809 FLEX
+CCODE  equ $0000
+CDATA  equ $8000
+CSTACK equ $BFFF

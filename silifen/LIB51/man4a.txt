@@ -1,0 +1,401 @@
+,pn 17
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Small-C Language Definition
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+`$1B,'!,24`
+,ce 2
+4. Small-C Language Definition
+
+`$1B,'!,8`
+4.1 Comments
+,pp
+The characters "/*" introduce a comment, which terminates with the characters "*/". Comments do not nest.
+
+4.2 Identifiers (Names)
+,pp
+An identifier is a sequence of letters and digits; the first character must be a letter. The underscore '_' counts as a letter. Upper and lower case letters are distinct, and in small-C lower case letters should be used for all identifiers to avoid clashes with assembler labels which are all in upper case. Eight characters are significant for local variables but function names and global variables are only significant to six characters due to the assembler. More than eight characters may be used but the excess will be ignored.
+
+4.3 Keywords
+,pp
+The following identifiers are reserved for use as keywords:
+
+        int       return    else
+        char      break     while
+        continue  if        for
+        do
+
+,pp
+The following are the unimplemented keywords and should be avoided to maintain compatibility with full C and upgrades of small-C.
+
+        float     extern    unsigned
+        double    register  auto
+        struct    typedef   switch
+        union     static    case
+        long      goto      default
+        short     sizeof    entry
+
+
+4.4 Constants
+
+,in 4
+4.4.1 Integer Constants
+,pp
+An integer constant is a sequence of digits in decimal. Octal and hexadecimal constants are specified using a leading '0' (zero) for octal numbers and a leading "0x" or "0X" for hexadecimal.
+
+e.g. 
+
+1234     value one thousand two hundred and thirty four.
+0377     value two hundred and fifty five.
+0x7f     value one hundred and twenty seven.
+0X2A1    value six hundred and seventy three.
+
+,pp
+Integer constants are always truncated to signed 16 bit precision even if the -4 option (to generate 32 bit code) is in force.
+
+4.4.2 Long Constants
+,pp
+These are not implemented in the 16 bit versions of  small-C, the L suffix is not recognised.
+
+
+4.4.3 Character Constants
+,pp
+A character constant is a character enclosed in single quotes as in 'x'. The value of a character constant is the numerical value of the characters ascii code. Backslash escape sequences are defined below.
+
+ sequence            name       decimal code   
+    \n              newline         13        
+    \f              form feed       12
+    \t              tab             9
+    \b              backspace       8
+    \l (not unix)   linefeed        10
+    \r (not unix)   return          13
+    \\              single backslash
+    \"              double quote in strings
+    \'              single quote in char constants
+    \xyz            octal value     64x+8y+z
+,pp
+The \n, newline, character is defined as a linefeed for Unix systems and as a return for most non Unix systems including FLEX. If a newline is written to the screen (stdout or stderr) then a return, linefeed pair is always output on all systems.
+
+4.4.4 Floating Point Constants
+,pp
+These are not implemented in small-C.
+
+,in 0
+
+4.5 Strings
+,pp
+A string is a sequence of characters surrounded by double quotes as in "xxxxxxxx". A quoted string can be used anywhere where a pointer to character can occur as it is implemented as an array of characters with a trailing null apended by the compiler. The value of a quoted string when used in an expression is the address of the first character in the string. All strings, even when written identically, are distinct.
+
+4.6 Storage Class and Types
+,pp
+There are two classes of storage for identifiers in small-C, neither of which allow explicit declaration. If an identifier is declared outside a function definition then its class defaults to "external". This means that it is globally declared as a location in memory and can be used from any function in the program. If an identifier is declared inside a function then it is classed as "auto" and exists on the stack while the function is executing, disappearing when the function returns. These are sometimes known as local variables. If a local variable exists with the same name as a global variable then the local variable is always used. The "static" and "register" storage classes are not implemented. If an identifier is used but has not been defined then it is assumed to be an external function.
+,pp
+There are two fundamental types of objects in small-C.        Characters are declared as "char" and are 8 bit. Integers are declared as "int" and are 16 bit unless the -4 option is in force when they are 32 bit. (all signed 2's complement)
+,pp
+Modifiers "short", "long" and "unsigned" are not implemented. Types "float" and "double" are not implemented.
+,pp
+Besides the fundamental types there is a class of derived types:
+,in 8
+
+Arrays of integers and characters
+Pointers to integers and characters
+Functions returning integers
+,in 0
+,pp
+There are no structures or unions in small-C and arrays of arrays (multiple dimensions) are not implemented. 
+
+4.7 Objects and Lvalues
+,pp
+An object is a manipulateable item of storage; an lvalue is an expression referring to an object. e.g. an identifier. The name lvalue comes from assignment where the left operand must be a l(eft)value. i.e. lvalue = rvalue . When an object is used as an lvalue the compiler uses its address so that a result can be stored in it. When an object is used as an rvalue the compiler uses the value of the object to generate the result.
+
+4.8 Conversions
+,pp
+A number of operators may, depending on their operands, cause conversion of the value of an operand from one type to another.
+
+,in 4
+4.8.1 Characters and Integers
+,pp
+A character may be used wherever an integer may be used. In all cases the value is converted to an integer by sign extension. When an integer is converted to a character the most significant byte is discarded.
+
+
+4.8.2 Pointers and Integers
+,pp
+An integer may be added to or subtracted from a pointer. Two character pointers may be subtracted to give an integer result of the number of characters between the two pointers. Integer pointers are not handled correctly in small-C.
+,in 0
+
+4.9 Expressions
+,pp
+An expression is a combination of identifiers, function calls, constants and operators which has a value.
+,pp
+A unary operator takes a single value and modifies it. e.g. negation "-exp"
+,pp
+A binary operator combines two values into a value. e.g. addition "exp1+exp2"
+,pp
+Operators have a precedence, that is, they are evaluated in a predefined order. The order can be overruled using brackets. e.g. multiplication has a higher precedence than addition so that "a+b*c" is equivalent to "a+(b*c)" rather than "(a+b)*c" which may have a different value.
+,pp
+The small-C compiler will compile exedingly large expressions and is limited only by the stack space available to the compiler.
+,pp
+The precedence of operators is the same as the order in which they are described in this section, starting with the highest precedence.
+
+,in 4
+4.9.1 Primary Expressions
+,pp
+A primary expression is the building block of an expression and can be acted on by an operator. Primary expressions are always evaluated first.
+
+primary expressions:
+,in 8
+identifier                    - e.g. variable name
+constant
+string
+(expression)                  - bracketed expression
+primary-expr[expr]            - array indexing
+primary-expr(expr,expr,....)  - function call
+,in 4
+
+,pp
+If an identifier is a variable name then its value is given by the contents of the variable. However, if the identifier is an array or function name which is not being indexed or called then its value is the address of the array or function. This address cannot be used as an lvalue unless it is indexed.
+,pp
+Both integer and character constants are stored as integers.
+,pp
+A string is a primary expression of type "array of char" whose value is the address of the first character in the string.
+,pp
+A bracketed (parenthesized) expression can occur anywhere where a primary expression can occur.
+,pp
+A primary expression followed by an expression in square brackets is a primary expression and usually forms array subscripting. The primary expression usually evaluates to a pointer while the subscript expression is an integer. The expression E1[E2] is directly equivalent to  *((E1)+(E2)) where the '*' is the indirection operator. Note that if E1 is of type pointer to integer then the subscript is doubled before it is added.
+,pp
+A primary expression followed by a list of expressions in brackets constitutes a function call. All of the expressions in brackets are evaluated and are passed as arguments to the function. The primary expression is evaluated to the address of the function to call. e.g. 4000(1,2,3) will push 1,2 and 3 on the stack (in that order) and call the function at address 4000 (decimal). Note that the stacking order is the reverse of that used by most unix C compilers, this does not matter for those functions that do not have variable numbers of arguments. Computed function calls are a common cause of problems in C programs as no checks are made on the address. The main use is to have arrays of pointers to functions and to select the required function using an index as  (array[i])() or to pass a pointer to function as a parameter to another function where it can be called as (*function)().
+,pp
+All arguments to functions are passed as integer sized values, so any expression evaluating to a character is sign extended and pushed on the stack as an integer.
+
+
+4.9.2 Unary Operators
+,pp
+The unary operators are:
+
+unary-expression:
+,in 8
+*expression            - indirection
+&lvalue                - take address
+-expression            - negate (2's complement)
+~expression            - bitwise complement
+++lvalue               - pre increment
+--lvalue               - pre decrement
+lvalue++               - post increment
+lvalue--               - post decrement
+,in 4
+,pp
+These operators group right to left and there is no precedence, so "*++s" means "*(++s)" and "++*s" means "++(*s)".
+,pp
+Unary operators have higher precedence than all other operators ( except indexing "[]" and function call "()" which are parts of primary expressions ).
+,pp
+The unary "*" operator means indirection, the expression is taken to be a pointer and the result is an lvalue referring to the object to which the expression points. e.g. if p is a pointer to a character then *p is the character.
+,pp
+The unary & operator takes the address of an lvalue. e.g. if c is a character then &c is a pointer to the character, so if p = &c then *p is c again.
+,pp
+The result of the unary - operator is the negative of its operand. The negation is two's complement (obvious).
+,pp
+The ~ operator yields the ones complement of its operand, that is every binary 1 is changed to a 0 and every 0 is changed to a 1. e.g. ~ 10110101 becomes 01001010. (note that C does not allow binary constants).
+,pp
+The preincrement operator ++lvalue increments the object reffered to by the lvalue and the expression has a value equal to the incremented object. e.g. if i contains 23 then ++i changes i to 24 and the expression (++i) has a value of 24. This is equivalent to (i=i+1) but has advantages for complicated lvalues. e.g. ++array[x*(y+34)-7]; increments the array element and only needs to evaluate the required array index once.
+,pp
+The predecrement operator --lvalue decrements the object referred to by the lvalue and the expression has a value equal to the decremented object. --i is equivalent to i=i-1.
+,pp
+The post increment operator is special in that the expression has the value of the object before it was incremented. e.g. if i is 23 then (i++) is also 23 but i is now set to 24. i++ is NOT equivalent to i=i+1 unless the expression occurs in a statement on its own and its value is ignored.
+,pp
+The post decrement operator is similar to the post increment operator. e.g. If i is 23 then (i--) has the value 23 but i is now set to 22.
+,pp
+All of the increment operators work in a similar way to the 6809 and 68000 auto increment and auto decrement addressing modes.
+,pp
+It should be noted that if a pointer is incremented or decremented then it is changed by the size of the object it was declared to point to. i.e. A pointer to integer is changed by 2 while a pointer to character is changed by one.
+
+4.9.3  Multiplicative Operators
+,pp
+The multiplicative operators *, / and % group left to right.
+
+multiplicative-expr:
+,in 8
+expression * expression        - multiplication
+expression / expression        - division
+expression % expression        - remainder (modulus)
+,in 4
+,pp
+The binary operator * indicates multiplication. Two integer values are multiplied to produce an integer result. Characters are extended before being multiplied. There is no check for overflow and there are problems with multiplies involving the most negative integer (-32768 for 16 bit).
+,pp
+The binary operator / indicates division. Integer division is performed and any remainder is lost. e.g 8/5 is 1. Divide by zero is handled differently by each version of C and in small-C on the 6809 it is not trapped, a maximum integer value is returned. The divide routine can be changed by the user if required (e.g. to return to FLEX with an error message on divide by zero). There are problems with divides that involve the most negative integer (-32768 for 16 bit).
+,pp
+The binary operator % indicates remainder. e.g. 8%5 is 3.
+
+4.9.4  Additive Operators
+,pp
+The additive operators + and - group left to right.
+
+additive-expr:
+,in 8
+expression + expression        - addition
+expression - expression        - subtraction
+,in 4
+
+,pp
+The result of the + operator is the sum of the operands. If an integer is added to a pointer to integer then the integer is doubled before it is added.
+,pp
+The - operator gives the difference of its operands. If both operands are pointers to the same type then the result is the number of objects between the two pointers. If an integer is subtracted from a pointer to integer then the integer is doubled before it is subtracted. (pointer arithmetic may cause problems if pointers to different types are combined  and the compiler sometimes treats integer pointers as if they were character pointers).
+
+
+4.9.5  Shift Operators
+,pp
+The shift operators << and >> group left to right. The left operand is shifted by the number of places specified in the right operand.
+
+shift-expr:
+,in 8
+expression << expression       - shift left
+expression >> expression       - shift right
+,in 4
+
+,pp
+The shift is signed and the operators should not be pointers. There is no check for overflow or underflow.
+
+4.9.6  Comparison Operators
+,pp
+The comparison operators compare two values or expressions and evaluate to a one if the comparison is true or a zero if the comparison is false. In C all boolean operations are performed with FALSE equal to zero and TRUE equal to any nonzero value. The major omissions in small-C are the boolean "and" (&&), "or" (||) and "not" (!) operators. Binary "and" (&) and "or" (|) can be used as substitutes with little difficulty however.
+
+comparision-expr:
+,in 8
+expression < expression      - less than
+expression > expression      - greater than
+expression <= expression     - less than or equal
+expression >= expression     - greater than or equal
+expression == expression     - equal
+expression != expression     - not equal
+,in 4
+
+,pp
+The main point to note is that expr == expr tests for equality and returns a one or a zero while lvalue = expr assigns the expression to the lvalue. Confusion over this distinction is one of the most common bugs in C programs.
+
+
+4.9.7  Bitwise Operators
+,pp
+The bitwise operators &, |, ^ (and,or,xor) work on integer values and provide bit twiddling operations as well as making up for the lack of logical "and" and "or" operators in small-C.
+
+bitwise-expr:
+,in 8
+expression & expression     - bitwise and
+expression | expression     - bitwise or
+expression ^ expression     - bitwise exclusive or
+,in 4
+
+,pp
+The bitwise "and" operator & takes two values and for each bit that is set in both the values the resulting value has that bit set. e.g. 22&46 is 6.
+,pp
+The results of two comparisons can be anded together because 1&1 is 1 and 1&0 is 0 etc. e.g. (i>4)&(j<=45) evaluates to give the same results as (i>4)&&(j<=45) would.
+,pp
+The bitwise "or" operator | takes two values and for each bit that is set in one or both of the values the resulting value has that bit set. e.g. 22|46 is 62.
+,pp
+As for &, (i>4)|(j<=45) evaluates to the same result as (i>4)||(j<=45) would.
+,pp
+The bitwise exclusive or operator ^ takes two values and for each bit that is set in only one of the values the resulting value has that bit set. e.g. 22^46 is 56.
+
+
+4.9.8  Assignment Operators
+,pp
+The only assignment operator in small-C is simple assignment. The operator assignments are not implemented. They can easily be simulated. e.g. i += 5 is equivalent to i=i+5.
+
+assignment-expr:
+,in 8
+lvalue = expression
+,in 4
+
+,pp
+The main difference between assignment in C and assignment in other languages is that the assignment expression as a whole has a value equal to the value being assigned. Assignments can be nested inside expressions and chained together. e.g. a=b=c=d=0 will set a,b,c and d to zero because the zero is chained from right to left through the expression.
+,pp
+Another example is a = 25 + (b = 43). This sets b to 43 an then sets a to 25+43 or 68.
+,pp
+A source of confusion in C is the use of assignment where some people expect comparisons. e.g.
+
+       if ( (c=getchar()) != EOF )
+            putchar(c);
+,pp
+This statement tests to see if the function getchar has returned an end of file value but it also puts the value into c before it tests. If the character is not an end of file then it is passed to the function putchar.
+,pp
+Note that if(z=1)....  sets z to one rather than testing to see if z was a one. To test we need if(z==1)....
+
+,in 0
+
+4.10  Declarations
+,pp
+Declarations are used to specify the interpretation which C gives to each identifier.
+
+declaration:
+        type-specifier  declarator-list;
+
+
+type-specifier:
+        int             - 16 bit signed integer
+        char            - 8 bit signed character
+
+,nl 6
+
+declarator-list:
+        identifier            - named variable of given type
+        *identifier           - pointer to given type
+        identifier[]          - pointer to given type
+        identifier[constant]  - array of type,size constant
+        *identifier[]         - pointer to pointer (see below)
+
+
+e.g. char a,*b,c[],d[80];
+     int  e[80];
+,pp
+On the 6809 the above defines an 8 bit character a,  sixteen bit pointers to characters b and c, an array of 80 characters d, and an array of 80 integers (160 bytes long) e.
+,pp
+In small-C the pointer to pointer declaration is only allowed in the definitions of function arguments and is bodged so that a pointer to integer is really generated. This is to allow the standard definition of:
+
+main(argc,argv)
+        int argc;
+        char *argv[];
+
+,pp
+Problems occur if an attempt is made to get at a character via argv without using an intermediate character pointer.
+
+char c;
+c = *argv[1];   this doesn't get the first character of argv[1]
+                in small-C. It gets the first integers worth.
+                c will end up with the second character instead.
+
+char c, *p;
+p = argv[1];
+c = *p;         this succeeds in getting the first character.
+
+,pp
+If a declaration is made outside the body of a function then identifiers are allocated to global memory locations. (the storage class defaults to "static"). Static variables are initialised to zero between the program being loaded and execution starting at the function main. 
+,pp
+If  declarations are made inside the body of a function or compound statement then the identifiers are allocated to local storage on the stack (the storage class defaults to "auto"). Auto variables are created new each time the function is called (or compound statement is entered) and contain garbage initially. Note that a variable declared inside a while loop will be wiped out and reallocated each time round the loop. Sometimes the value may still be set up but don't depend on it!
+,nl 6
+
+        while(i < 10)
+                {
+                int j;  /* variable local to this block */
+                j = i++;    /* body of block */
+                }       /* j will disappear here */
+

@@ -1,0 +1,55 @@
+* libdef01 R1.1b 18/11/85 -  Define runtime library for 6801 small-C compiler
+*
+* copyright 1985 by Silicon Fen Software
+*
+        opt     exp
+*
+* The CRASMB assembler can be used with R1.1b, set to 1 if it is used
+CRASMB  set     1
+*
+        if      CRASMB
+        OPT     NOU
+        endif
+*
+C6809   set     0
+C6801   set     1
+C68091  set     0
+*
+* macro's and FLEX constants
+        lib     libm01       machine library and macros
+        lib     libf01       equates for i/o etc
+*
+* set library files for libload
+LIBC    EQU     1            default library always loaded
+LIBS    EQU     0            stdio.h terminal I/O library
+LIBP    EQU     0            printf library routine
+LIBH    SET     0            hardware.h  hardware access library
+LIBA    SET     0            ctype.h  ascii tests and conversions library
+* enable required library functions
+* the following routines are in libc01 - default library
+STRCAT  SET     0
+STRNCAT SET     0
+STRCMP  SET     0
+STRNCMP SET     0
+STRCPY  SET     0
+STRNCPY SET     0
+STRLEN  SET     0
+FILL    SET     0
+INDEX   SET     0
+RINDEX  SET     0
+SIGN    SET     0
+ABS     SET     0
+BTOI    SET     0
+ITOB    SET     0
+* the following routines are in libs01 - terminal i/o using stdio.h
+FRDCHK  SET     0
+PUTCHAR SET     0
+GETCHAR SET     0
+PUTS    SET     0
+GETS    SET     0
+* machine library routines, not C callable
+CC_MUL  SET     0
+CC_DIV  SET     0
+CC_ASR  SET     0
+CC_ASL  SET     0
+* end of libdef01

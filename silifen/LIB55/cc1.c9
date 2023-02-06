@@ -1,0 +1,525 @@
+/* cc1.c9 R1.1.1 4/7/85 */
+
+#include        "stdio.h"
+#include        "ctype.h"
+
+/* Silicon Fen Software Small-C compiler R1.1 for macro assembler */
+
+/* version string for use in ask() and header() */
+#define VERSION  "Silicon Fen Software: Small-C Compiler R1.1 4/7/85"
+
+/* define symbol table parameters */
+#define SYMSIZ               14
+#define SYMTBSZ              5040
+#define NUMGLBS              300
+#define STARTGLB             symtab
+#define ENDGLB               STARTGLB + NUMGLBS * SYMSIZ
+#define STARTLOC             ENDGLB + SYMSIZ
+#define ENDLOC               symtab + SYMTBSZ - SYMSIZ
+
+/*   define symbol table entry format        */
+
+#define NAME                 0
+#define IDENT                9
+
+#define TYPE                 10
+#define STORAGE              11
+#define OFFSET               12
+
+/*   system wide name size for symbols       */
+
+#define NAMESIZE             9
+#define NAMEMAX              8
+
+/*   define possible entries for "ident"     */
+
+#define VARIABLE             1
+#define ARRAY                2
+#define POINTER              3
+#define FUNCTION             4
+
+/*   define possible entries for type        */
+
+#define CCHAR                1
+#define CINT                 2
+
+/*   define possible entries for "storage"     */
+
+#define STATIK               1
+#define STKLOC               2
+
+/*   define the "while" statement queue        */
+
+#define WQTABSZ              100
+#define WQSIZ                4
+#define WQMAX                wq + WQTABSZ - WQSIZ
+
+/*   define entry offsets in while queue      */
+
+#define WQSYM                0
+#define WQSP                 1
+#define WQLOOP               2
+#define WQLAB                3
+
+/*   define the literal pool */
+
+#define LITABSZ              3000
+#define LITMAX               LITABSZ - 1
+
+/*   define the input line   */
+
+#define LINESIZE             132
+#define LINEMAX              LINESIZE - 1
+#define MPMAX                LINEMAX
+
+/*     define the macro (define) pool  */
+
+#define MACQSIZE             1000
+#define MACMAX               MACQSIZE - 1
+
+/*   define statement types (tokens) */
+
+#define STIF                 1
+#define STWHILE              2
+#define STRETURN             3
+#define STBREAK              4
+#define STCONT               5
+#define STASM                6
+#define STEXP                7
+#define STDO                 8
+#define STFOR                9
+
+/* define filename size */
+
+#define FNAMSIZ              20
+
+/*   now reserve some storage words  */
+
+char  symtab[SYMTBSZ];          /*symbol table*/
+char  *glbptr;
+char  *locptr;                  /*pointers to next entry*/
+int   wq[WQTABSZ];              /*while queue*/
+int   *wqptr;                   /*pointer to next entry*/
+char  litq[LITABSZ];            /*literal pool*/
+int   litptr;                   /*pointer to next entry*/
+char  macq[MACQSIZE];           /*macro string buffer*/
+int   macptr;                   /*and its index*/
+char  line[LINESIZE];           /*parsing buffer*/
+char  mline[LINESIZE];          /*temp macro buffer*/
+int   iflevel;          /* #if.. nest level */
+int   skiplevel;        /* level at which #if.. skipping started */
+int   lptr;
+int   mptr;                     /*pointers into each*/
+
+/*   misc storage    */
+
+char  *version;                 /*pointer to version string */
+int   intwidth;                 /*integer width in bytes 2 or 4*/
+int   nxtlab;                   /*next available label*/
+int   litlab;                   /*label # assigned by literal pool*/
+int   sp;                       /*compiler relative stack pointer*/
+int   argstk;                   /*function arg sp*/
+int   ncmp;                     /*# open compound statements*/
+int   errcnt;                   /*# errors in compilation*/
+int   eof;                      /*set non zero on final input eof*/
+int   glbflag;                  /*non-zero if internal globals*/
+int   ctext;                    /*non-zero to intermix c-source*/
+int   cmode;
+/*non-zero while parsing  c-code zero when parsing assembly code*/
+int   lastst;                   /*last executed statement type*/
+char  quote[2];                 /*literal string for '"' */
+char  *cptr;                    /*work pointer to any char buffer*/
+int   *iptr;                    /*work pointer to any int buffer*/
+int   ch,nch;                   /*current and next characters as ints*/
+char  infnam[FNAMSIZ];          /*buffer for current filename*/
+char  incfnam[FNAMSIZ];         /*buffer for include filename*/
+int   infline;                  /*line number for input file*/
+int   incfline;                 /*line number for include file*/
+int   curr_arg;                 /*current place in argument list*/
+int   dump;                     /*dump statistics flag*/
+int   gargc;                    /*global copy of arg count*/
+int   *gargv;                   /*pointer to argument array*/
+FILE  *output;                  /*output fcb pointer*/
+FILE  *input;                   /*input file fcb pointer*/
+FILE  *input2;                  /*include file fcb pointer */
+/*                   >>> start cc1 <<<                               */
+/*                                                                   */
+main(argc,argv)
+     int argc;
+     char *argv[];
+     {
+     version = VERSION;              /*point at version string*/
+     glbptr = STARTGLB;              /*clear global symbols*/
+     locptr = STARTLOC;              /*clear local symbols*/
+     wqptr = wq;                     /*clear while queue*/
+     mptr = -1;                      /* flag not in preprocess */
+     macptr =                        /*clear macro pool*/
+     litptr =                        /*clear literal pool*/
+     sp =                            /*stack ptr (relative)*/
+     errcnt =                        /*no errors*/
+     eof =                           /*not eof yet*/
+     input =                         /*no input file*/
+     input2 =                        /*no include file*/
+     ncmp =                          /*no open compound states*/
+     ch = nch =                      /*no input chars*/
+     dump =                          /* dont dump stats */
+     lastst = 0;                     /*no last statement yet*/
+     output = stdout;                /*default to stdout for ask()*/
+     quote[1] = 0;                   /* ... all set to zero ...*/
+     *quote = '"';                   /*fake a quote literal*/
+     cmode = 1;                      /*enable pre-processing*/
+     gargc = argc;                   /*set up global copies*/
+     gargv = argv;
+     curr_arg = 1;                   /*start after program name*/
+/*                   compiler body                                   */
+     if (argc>1)
+         cl_ask();                   /* get command line options */
+     else
+         ask();                      /*get interactive options*/
+     openout();                      /*get an output file*/
+     openin();                       /*and initial input file*/
+     header();                       /*intro code*/
+     codeseg();                      /*declare code segment*/
+     parse();                        /*process ALL input*/
+     dumpextf();                     /*dump defs and refs for fns*/
+     litseg();                       /*declare literal segment*/
+     dumplits();                     /*then dump literal pool*/
+     dataseg();                      /*data segment*/
+     dumpglbs();                     /*and all static memory*/
+     errorsummary();                 /*summarise errors*/
+     trailer();                      /*follow-up code*/
+     closeout();                     /*close the output (if any)*/
+     dumpstats();                    /*dump compiler statistics*/
+     return;                         /*then exit to the system*/
+     }
+/*                                                                   */
+/*                   get options from user                           */
+/*                                                                   */
+ask()
+     {
+     int     k;
+     int     num;
+     kill();                                 /*clear input line*/
+     nl();
+     pl(version);                       /* version string defined above */
+     nl();
+     pl("Interleave source as comments (y/*n): ");
+     getl(line);                             /*get answer*/
+     if (toupper(*line) == 'Y')
+            ctext = 1;                      /*user said yes*/
+     else
+            ctext = 0;
+     /* check for module compilation */
+     pl("Declare global variables (*y/n)     : ");
+     getl(line);                             /*get answer*/
+     if ( toupper(*line) == 'N' )
+            glbflag = 0;                    /*user said no*/
+     else
+            glbflag = 1;
+     /* check for 32 bit integers */
+     pl("Generate 32 bit macro code (y/*n)   : ");
+     getl(line);
+     if ( toupper(*line) == 'Y' )
+            intwidth = 4;       /* 32 bit for 68000 */
+     else
+            intwidth = 2;       /* 16 bit for 6809, 6801 */
+     /*get first allowable number of compiler generated labels
+     in case user will append modules*/
+     while ( 1 )
+            {
+            pl("Starting number for labels (*0)     : ");
+            getl(line);
+            if ( *line == 0 )
+                    {
+                    num = 0;
+                    break;
+                    }
+            if ( btoi(line,4,&num,10) )
+                    break;
+            }
+     nxtlab = num;                           /*first label = literal pool*/
+     litlab = getlabel();                    /*first label = literal pool*/
+     kill();                                 /*erase line*/
+     }
+
+cl_ask()
+/* fix options from command line */
+    {
+    int i;
+    char *p;
+    ctext = 0;
+    i = glbflag = 1;
+    intwidth = 2;       /* assume 16 bit */
+    while(i<gargc)    /*look through all args*/
+        {
+        p = gargv[i];
+        if (*p == '-')   /*this is an option arg*/
+            {
+            if (*++p == 0)
+                {
+                puts("\nNo options given after '-' on command line");
+                exit(1);
+                }
+            while(*p)
+                {
+                if (*p == 'i')           /* interleave source */
+                    ctext = 1;
+                else if (*p == 'm')      /* compile module only */
+                    glbflag = 0;
+                else if (*p == '4')      /* wide integers */
+                    intwidth = 4;
+                else if (*p == '2')      /* narrow integers */
+                    intwidth = 2;
+                else if (*p == 'd')      /* dump stats */
+                    dump = 1;
+                else if (*p == 'n')      /* label number */
+                    {
+                    ++p;
+                    p = p-1+btoi(p,6,&nxtlab,10); /*convert into nxtlab*/
+                    }
+                else if (*p == 'o')       /* skip output file */
+                    break;
+                else
+                    {
+                    pl("Unknown option: -");
+                    putchar(*p);
+                    putchar(EOL);
+                    exit(1);
+                    }
+                ++p;
+                }
+            }
+        ++i;
+        }
+    litlab = getlabel();
+    }
+
+dumpstats()
+/* print out compiler statistics */
+        {
+        if (dump)
+                {
+                pl("compilation errors ");
+                outdec(errcnt);
+                pl("global symbols     ");
+                outdec((glbptr-STARTGLB)/SYMSIZ);
+                pl("literal characters ");
+                outdec(litptr);
+                pl("define characters  ");
+                outdec(macptr);
+                nl();
+                }
+        }
+
+parse()
+     /* parse all the input text */
+     {
+     while ( eof == 0 )              /*do until no more input*/
+            {
+            if ( amatch("char",4))
+                    /*look for character variable definition*/
+                    {
+                    declglb(CCHAR);
+                    ns();
+                    }
+            else if ( amatch("int",3))
+                    /*look for integer variable definition*/
+                    {
+                    declglb(CINT);
+                    ns();
+                    }
+            else if ( match("#asm"))      /*is it assembly code?*/
+                    doasm();
+            else if ( match("#include"))  /*is it an include statement*/
+                    doinclude();          /*if so include file*/
+            else if ( match("#define"))
+                    /*is it a substitution definition?*/
+                    addmac();             /*if so add to macro pool*/
+            else newfunc();     /*if no match assume its a function*/
+            blanks();                       /*force eof if pending*/
+            }
+     }
+/*                                                                   */
+/*           dump the literal pool                                   */
+/*                                                                   */
+dumplits()
+     {
+     int     j;
+     int     k;
+     if ( litptr == 0 )                      /*if nothing there exit*/
+            return;
+     printlabel(litlab);                     /*print literal label*/
+     k=0;                                    /*init an index ...*/
+     while ( k < litptr )                    /* to loop with*/
+            {
+            defbyte();                      /*pseudo op to define byte*/
+            j = 10;                         /*max bytes per line*/
+            while ( j--)
+                    {
+                    outdec((litq[ k++ ]));
+                    if (( j == 0 ) | (k >= litptr) )
+                            {
+                            nl();
+                            break;
+                            }
+                    outbyte(',');           /*separate bytes*/
+                    }
+            }
+     }
+/*                                                                   */
+/*           dump all static variables                                */
+/*                                                                   */
+dumpglbs()
+     {
+     int j, *temp;
+     cptr = STARTGLB;
+     while ( cptr < glbptr )
+            {
+            if ( cptr[IDENT] != FUNCTION )
+                    /*do if anything but function*/
+                    {
+                    if ( glbflag )
+                       {
+                       outstr(cptr);           /*output name as label*/
+                       temp = cptr + OFFSET; /* get int from char array */
+                       j = *temp;     /*calc # bytes*/
+                       if ((cptr[TYPE] == CINT ) | (cptr[IDENT] == POINTER))
+                               j=j*intwidth;
+                       defstorage( j );   /* define storage */
+                       pubref(cptr);
+                       }
+                    else
+                       {
+                       extvref(cptr);
+                       }
+                    }
+            cptr = cptr + SYMSIZ;
+            }
+     }
+
+dumpextf()
+/* dump references to external functions */
+       {
+       int *temp;
+       cptr = STARTGLB;
+       while( cptr < glbptr )
+               {
+               if ( cptr[IDENT] == FUNCTION )
+                       {
+                       temp = cptr + OFFSET;
+                       if ( *temp == 0 )
+                               extfref(cptr);
+                       else
+                               pubref(cptr);
+                       }
+               cptr = cptr + SYMSIZ;
+               }
+       }
+
+
+/*                                                                   */
+/*           report any errors                                       */
+/*                                                                   */
+errorsummary()
+     {
+     /*see if there is anything hanging*/
+     if ( ncmp )
+            error("missing closing brackets");/*open compound statement*/
+     nl();
+     comment();
+     outdec(errcnt);                         /*total # errors*/
+     outstr(" errors in compilation\n");
+     }
+/*                                                                   */
+/*                   declare a static variable                       */
+/*                   (i.e. define for use)                           */
+/*                                                                   */
+/*     makes an entry into the symbol table so that subsequent       */
+/*   references can call symbol by name                              */
+/*                                                                   */
+declglb(typ)
+int  typ;
+     {
+     int     k;
+     int     j;
+     char    sname[NAMESIZE];
+     while(1)
+            {
+            while (1)
+                    {
+                    if ( endst() )                  /*do line*/
+                            return;
+                    k = 1;                          /*assume 1 element*/
+                    if ( match ("*") )              /*pointer?*/
+                            j = POINTER;            /*yes*/
+                    else j = VARIABLE;              /*no*/
+                    if (symname(sname) == 0 )       /*name ok?*/
+                            illname();              /*no*/
+                    if ( findglb(sname) )           /*already there*/
+                            multidef(sname);
+                    if ( match ("[") )              /*array*/
+                            {
+                            k = needsub();          /*get size*/
+                            if ( k )
+                                    j = ARRAY;      /*10 = array*/
+                            else j = POINTER;       /*0 = pointer*/
+                            }
+                    addglb(sname , j , typ , k );   /*add symbol*/
+                    break;
+                    }
+            if ( match(",") == 0 )                  /*more?*/
+                    return;
+            }
+     }
+/*                                                                   */
+/*                   declare local variables                         */
+/*                   (ie define for use)                             */
+/*works just like "decglb" but modifies machine stack and adds symbol*/
+/*table entry with appropriate stack offset to find it again         */
+/*                                                                   */
+declloc(typ)
+int  typ;
+     {
+     int     k;
+     int     j;
+     char    sname[NAMESIZE];
+     while(1)
+            {
+            while(1)
+                    {
+                    if ( endst() )          /*do line*/
+                    return;
+                    if ( match ("*") )              /*pointer?*/
+                            j = POINTER;            /*yes*/
+                    else j = VARIABLE;              /*no*/
+                    if (symname(sname) == 0 )       /*name ok?*/
+                            illname();              /*no*/
+                    if ( findloc(sname) )           /*already there*/
+                            multidef(sname);
+                    if ( match ("[") )              /*array*/
+                            {
+                            k = needsub();             /*get size*/
+                            if ( k )
+                                    {
+                                    j = ARRAY;      /*10 = array*/
+                                    if ( typ == CINT )
+                                            k = k * intwidth;
+                                    }
+                            else
+                                    {
+                                    j = POINTER;    /*0 = pointer*/
+                                    k = intwidth;
+                                    }
+                            }
+                    else if (( typ == CCHAR) & ( j != POINTER ))
+                            k = 1;
+                    else k = intwidth;
+                    /*change machine stack*/
+                    sp = modstk(sp - k );
+                    addloc (sname , j , typ , sp );
+                    break;
+                    }
+            if (match (",") == 0 )
+                    return;
+            }
+     }

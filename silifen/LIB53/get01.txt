@@ -1,0 +1,42 @@
+echo get files onto ramdisk (drive 1) from floppy (drive 2) for 6801 compilation
+contin
+echo get standard files
+echo get exec files for get09 goto1 goto9 goto91
+y copy 2.get09.txt 1
+y copy 2.goto1.txt 1
+y copy 2.goto9.txt 1
+y copy 2.goto91.txt 1
+echo copying stdio.h
+y copy 2.stdio.h 1
+echo copying ctype.h
+y copy 2.ctype.h 1
+echo copying libdef01.txt
+y copy 2.libdef01.txt 1
+echo copying libdef91.txt
+y copy 2.libdef91.txt 1
+echo copying libload1.txt
+y copy 2.libload1.txt 1
+echo copying libld91.txt
+y copy 2.libld91.txt 1
+echo switch to 6801 code generation
+y copy libdef01.txt libdef.txt
+y copy libload1.txt libload.txt
+echo copying libc01.txt
+y copy 2.libc01.txt 1
+echo copying libf01.txt
+y copy 2.libf01.txt 1
+echo copying libm01.txt
+y copy 2.libm01.txt 1
+echo copying libs01.txt
+y copy 2.libs01.txt 1
+echo copying liba01.txt
+y copy 2.liba01.txt 1
+echo copying libp.txt
+y copy 2.libp.txt 1
+echo get hardware access library if required
+contin
+echo copying hardware.h
+y copy 2.hardware.h 1
+echo copying libh.txt
+y copy 2.libh.txt 1
+echo now setup for 6801 use

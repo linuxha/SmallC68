@@ -6,10 +6,12 @@ Originally these were Flex OS Compilers but I think I can make this work under L
 
 # Notes
 
+There are currently 3 sets of source code for the Small C compiler. The 6800 version (a C to peudo code compiler), the silifen version (looks like a C to asm code compiler), and the v22 version (MSDOS C to executable).
+
 ```
 6800/ ..... Early version of the Flex OS Small C compiler (very limitted, v1.1 1982)
-silifen/ .. Later version of the Flex OS Small C compiler (has for(), etc v1.1 1985)
-v22/ ...... MSDOS version of the Small C compiler (outputs 8086 code)
+silifen/ .. Later version of the Flex OS Small C compiler (has for(), etc v2.1 1985)
+v22/ ...... MSDOS version of the Small C compiler (v2.2, outputs 8086 code)
 LICENSE ... Proposed License (I may need to change this)
 Makefile .. Ignore this, make files have moved their respective directories
 README.md . This file

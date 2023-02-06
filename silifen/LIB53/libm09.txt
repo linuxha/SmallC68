@@ -1,0 +1,406 @@
+* libm09 R1.1b 16/11/85 - 6809 codegen macros
+*
+* Silicon Fen Software 6809 macro's for small-C compiler
+*
+POS_IND set 0   default not pos indep
+*
+* start a new function
+FUNC macro
+ if CRASMB
+M_ARGS set 1
+ else
+   ifc &0,main
+     if &1
+M_ARGS set 1  
+     else
+M_ARGS set 0
+       endif
+     endif
+   endif
+ endm
+
+* get a byte from a global variable
+GETB macro
+ if POS_IND
+   ldb &1,pcr
+ else
+   ldb &1
+   endif
+ sex
+ endm
+
+* get a word from a global variable
+GETW macro
+ if POS_IND
+   ldd &1,pcr
+ else
+   ldd &1
+   endif
+ endm
+
+* get the address of a stack variable
+GETLOC macro
+ leay &1,s
+ tfr y,d
+ endm
+
+* get the address of a global variable
+GETGLB macro
+ if POS_IND
+   leay &1,pcr
+   tfr y,d
+ else
+   ldd #&1
+   endif
+ endm
+
+* store a byte in a global
+PUTB macro
+ if POS_IND
+   stb &1,pcr
+ else
+   stb &1
+   endif
+ endm
+
+* store a word in a global
+PUTW macro
+ if POS_IND
+   std &1,pcr
+ else
+   std &1
+   endif
+ endm
+
+* store byte at address on stack and pull
+PUTSB macro
+ stb [,s++]
+ endm
+
+* store word at address on stack and pull
+PUTSW macro
+ std [,s++]
+ endm
+
+* get byte from address in reg
+GETBI macro
+ tfr d,y
+ ldb ,y
+ sex
+ endm
+
+* get word indirect
+GETWI macro
+ tfr d,y
+ ldd ,y
+ endm
+
+* push reg
+PUSH macro
+ pshs a,b
+ endm
+
+* swap TOS and reg
+SWAPS macro
+ puls y
+ PUSH
+ tfr y,d
+ endm
+
+* swap 1st and 2nd reg
+SWAP macro
+ exg d,x
+ endm
+
+* get word from global pointer
+GWWI macro
+ if POS_IND
+   ldd [&1,pcr]
+ else
+   ldd [&1]
+   endif
+ endm
+
+* get byte from global pointer
+GWBI macro
+ if POS_IND
+   ldb [&1,pcr]
+ else
+   ldb [&1]
+   endif
+ sex
+ endm
+
+* get byte from stack
+GETBS macro
+ ldb &1,s
+ sex
+ endm
+
+* put byte in stack
+PUTBS macro
+ stb &1,s
+ endm
+
+* get word from stack
+GETWS macro
+ ldd &1,s
+ endm
+
+* put word in stack
+PUTWS macro
+ std &1,s
+ endm
+
+* get word from pointer on stack
+GETWSI macro
+ ldd [&1,s]
+ endm
+
+* get byte from pointer on stack
+GETBSI macro
+ ldb [&1,s]
+ sex
+ endm
+
+* check the name of a called fn
+CALLCHK macro
+ ifc &1,&2
+   ldd #&3      load arg count in bytes
+LIBP set 1      load printf library
+   endif
+ endm
+
+* call subroutine
+CALL macro
+ CALLCHK &1,printf,&2
+ if POS_IND
+   lbsr &1
+ else
+   jsr &1
+   endif
+ endm
+
+* return
+RET macro
+ rts
+ endm
+
+* jump
+GOTO macro
+ if POS_IND
+   lbra &1
+ else
+   jmp &1
+   endif
+ endm
+
+* test and jump if zero
+TEST macro
+ cmpd #0
+ lbeq &1
+ endm
+
+* jump if zero, assuming test is already in cc
+NTST macro
+ lbeq &1
+ endm
+
+* immediate load
+IMMED macro
+ ldd #&1
+ endm
+
+* call stack
+CALLS macro
+ ldd #&1        always load arg count in bytes
+ jsr [&1,s]
+ endm
+
+* increment stack
+INCS macro
+ leas &1,s
+ endm
+
+* scale reg
+SCALE macro
+ if &1=2
+   aslb
+   rola
+ else
+   asra
+   rorb
+   endif
+ endm
+
+* add to stack
+ADDS macro
+ addd ,s++
+ endm
+
+* sub from stack
+SUBS macro
+ PUSH
+ GETWS 2
+ subd ,s++
+ INCS 2
+ endm
+
+* mult stack by reg
+MULS macro
+CC_MUL SET 1
+ PUSH
+ CALL CCMUL
+ INCS 4
+ endm
+
+* divide ,s by reg
+DIVS macro
+CC_DIV SET 1
+ PUSH
+ CALL CCDIV
+ INCS 4
+ endm
+
+* modulus (remainder) of ,s divided by reg
+MODS macro
+CC_DIV SET 1
+ PUSH
+ CALL CCDIV
+ INCS 4
+ SWAP
+ endm
+
+* or with stack
+ORS macro
+ ora ,s+
+ orb ,s+
+ endm
+
+* exclusive or with stack
+EORS macro
+ eora ,s+
+ eorb ,s+
+ endm
+
+* and with stack
+ANDS macro
+ anda ,s+
+ andb ,s+
+ endm
+
+* shift right ,s by reg
+ASRS macro
+CC_ASR SET 1
+ PUSH
+ CALL CCASR
+ INCS 4
+ endm
+
+* shift left ,s by reg
+ASLS macro
+CC_ASL SET 1
+ PUSH
+ CALL CCASL
+ INCS 4
+ endm
+
+* increment reg
+INCD macro
+ addd #&1
+ endm
+
+* decrement reg
+DECD macro
+ subd #&1
+ endm
+
+* complement reg
+COMD macro
+ coma
+ comb
+ endm
+
+* negate reg
+NEGD macro
+ COMD
+ INCD 1
+ endm
+
+* test ,s against reg and set reg to 1 if true or 0 if false
+* problem with non commutative operators is that comparison is inverted
+CCTST macro
+ cmpd ,s++
+ &1 *+5
+ clrb
+ bra *+4
+ ldb #1
+ sex    this sets cc z flag correctly
+ endm
+
+CCEQ macro
+ CCTST beq
+ endm
+
+CCNE macro
+ CCTST bne
+ endm
+
+CCLT macro
+ CCTST bgt
+ endm
+
+CCGT macro
+ CCTST blt
+ endm
+
+CCLE macro
+ CCTST bge
+ endm
+
+CCGE macro
+ CCTST ble
+ endm
+
+CCULT macro
+ CCTST bhi
+ endm
+
+CCULE macro
+ CCTST bhs
+ endm
+
+CCUGT macro
+ CCTST blo
+ endm
+
+CCUGE macro
+ CCTST bls
+ endm
+
+* declare code segment
+CSEG macro
+ endm
+
+* declare literal segment
+LSEG macro
+ endm
+
+* declare data segment
+DSEG macro
+ endm
+
+* external function reference
+EXTF macro
+&2 SET 1
+ endm
+
+* external variable reference
+EXTV macro
+ endm
+
+* public reference
+PUB macro
+ endm
+
+* end of libm

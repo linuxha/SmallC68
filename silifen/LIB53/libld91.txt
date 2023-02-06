@@ -1,0 +1,27 @@
+* libld91 R1.1 26/8/85  Load runtime library for FLEX9 6809 small-C compiler
+* copyright 1985 by Silicon Fen Software
+*
+        IF LIBP              printf library common to 6801 and 6809
+        lib     libp
+        ENDIF
+*
+        IF LIBC              default library is 6801 version
+        lib     libc01
+        ENDIF
+*
+        IF LIBS              stdio.h i/o library 6809, flex for testing
+        lib     libs09
+        ENDIF
+*
+        IF LIBG              plot.h  graphics library
+        lib     libg09
+        ENDIF
+*
+        IF LIBH              hardware.h  hardware access library (unused)
+        lib     libh09
+        ENDIF
+*
+        IF LIBA              ctype.h  ascii tests and conversions library
+        lib     liba09
+        ENDIF
+* end of libload9

@@ -1,0 +1,206 @@
+,pn 70
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Assembler Interfacing
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+`$1B,'!,24`
+,ce 2
+7. Assembler Interfacing
+
+`$1B,'!,8`
+,pp
+The small-C compiler has a few conventions that are used to generate the assembler output from C programs. By following these conventions assembler written routines can be interfaced to C routines.
+,pp
+Any assembler subroutine that obeys the small-C conventions can be called from C and this is the way that most of the existing runtime library is written. This library is provided in source form and provides many examples of how to do it.
+,pp
+Any C global variable can be accessed from assembler by name but local, stack based, variables are more tricky.
+,pp
+There are two main reasons for using assembler with small-C, the first is to access existing assembler subroutines which require parameters to be passed in registers (FLEX calls, monitor calls or routines previously written by the user), the second is for speed.
+,pp
+If a program is not fast enough then first check that the existing runtime libraries are being used wherever possible. Most of these routines are already written in assembler and they are both faster and shorter than writing the equivalent in C. They have also been tested and documented which saves debugging time.
+,pp
+For further speed increases there are two possible approaches. The best method is to encapsulate the slow sections of code into small subroutines and then generate a new runtime library by coding those routines in assembler and using the existing mechanism to load the routines in when they are used. If this is done carefully and the routines are carefully chosen and documented they can be used again on other programs. The other method uses the small-C extension to standard C, the #asm and #endasm preprocessor directives. At any point in a small-C program #asm and #endasm can be used to bracket a section of assembler which passes straight through to the output file.
+
+
+7.1  C Callable Subroutines
+,pp
+The calling sequence for a C function is very simple. First the parameters for the function are obtained, if any of them are characters then they are sign extended to integers, then they are pushed onto the system stack. The order of parameters on the stack varies with different implementations of C but for small-C the first parameter is pushed first and is the furthest up the stack when the function is entered. When all the parameters have been pushed the function is entered using a simple JSR (or LBSR) which pushes the return address under the parameters. No registers are preserved across function calls as all temporary variables are stored on the stack.
+,pp
+When the function returns any local variables are deallocated so that the return address is  the base of the stack then a simple RTS returns to the calling routine which immediately adjusts the stack pointer to clear the parameters off the stack. If the function returned a value it will be in the D register.
+
+e.g.
+        v = funct(p1, p2, p3);
+
+This generates the code:
+
+        ldd p1          get p1 
+        pshs a,b        push on stack
+        ldd p2          get p2
+        pshs a,b        push on stack
+        ldd p3          get p3
+        pshs a,b        push on stack
+        jsr funct       call the function
+        leas 6,s        clear off the parameters
+        std v           save the result in v
+
+(this is shown in 6809 assembler rather than the optimised macros which are actually assembled, it also assumes that the variables p1,p2,p3,v are all defined as global integers)
+
+Inside funct the variables are accessed as shown below:
+
+        funct(a,b,c)    /* noddy example */
+                int a,b,c;
+                {
+                return a+b*c;
+                }
+
+        the assembler generated:
+
+        funct
+        * stack = p1,p2,p3,ret_address
+                ldd 6,s         get a (=p1)
+                pshs a,b        save on stack
+        * stack = p1,p2,p3,ret,p1
+                ldd 6,s         get b (=p2)
+                pshs a,b        save on stack
+        * stack = p1,p2,p3,ret,p1,p2
+                ldd 6,s         get c (=p3)
+                pshs a,b        save on stack
+        * stack = p1,p2,p3,ret,p1,p2,p3
+                jsr CCMUL       d = p2 * p3
+        * stack = p1,p2,p3,ret,p1,p2,p3 : d = p2 * p3
+                leas 4,s        clean up after multiply
+        * stack = p1,p2,p3,ret,p1
+                addd ,s++       d = d + p1
+        * stack = p1,p2,p3,ret : d = p1 + p2 * p3
+                rts
+
+Note that each time a value was pushed onto the stack the parameters were further away. This is why a, b, and c are all loaded with the same stack offset.
+,pp
+Local variables are created in C functions by bumping the stack down by the size of the local. For the 6809 with 16 bit offsets allowed from the stack pointer the local variables can occupy from 1 byte (a single char) to a total of almost 32Kbytes (an array of 16K integers). Other processors may be much less efficient at large stack offsets. These locals are always deallocated by bumping the stack pointer up to the return address before the function returns.
+,pp
+In summary then, the stack in a function contains parameters (as 16 bit values only) above the return address (16 bit) with local variables (any size) below the return address and temporary values used in expression evaluation (16 bit) below the locals. These temporary values are themselves often parameters for another function call.
+,pp
+The number of bytes passed to a function can be placed in the D register if required. This is done in a sneaky way so that only routines that need to know how many bytes were passed are told. This saves time on 99% of function calls when it is not worth loading D with the byte count.
+,pp
+There is a macro definition in LIBM09.TXT called CALLCHK which is used by the CALL macro to see if D needs to be loaded. CALLCHK looks at the name of the function being called and  if it is printf then D is loaded and the LIBP library flag is set so that LIBP.TXT is loaded later on. If a user routine needs to have the count in D then CALL must be modified to invoke CALLCHK with the name of the function.
+,pp
+As a special case, the macro CALLS which calls a function via a pointer to the function, always sets up D since it cannot find out the name of the function being called.
+,pp
+To use this passed value from C the following code is recommended.
+
+funct(arg)
+        char *arg;
+        {
+        int numargs;    /* a place to save D, last local */
+#asm            /* this bit must be before any C code */
+        std ,s          last local defined is at ,s
+#endasm
+        etc...
+        }
+
+,pp
+When a set of routines has been written in assembler they need to be loaded by the assembler when they are used. To generate a new runtime library some of the existing library files must be modified. A recipe is given below.
+
+,in 4
+1. Choose a name for the library, say LIBU09.TXT for the 6809 user library.
+
+2. Create a C header file containing any #define constants and globals that are used with the library, say user.h. This file must be #included in any program which uses the library.
+
+3. In user.h put the lines:
+    #asm                    assembler section
+    LIBU09  SET 1           library name in upper case
+    ROUT1   SET 0           routine names in upper case
+    ROUT2   SET 0           etc....
+    #endasm
+
+The names in upper case determine whether the library and the routines are conditionally assembled into the program. The library name is set so that the library is searched. The routine names are set to zero so that they will not be included if they are not used. The compiler generates EXTF macro's which do a SET 1 for any routines that are external to the program.
+
+4. Modify LIBDEF09.TXT so that it includes the line
+    LIBU09  SET 0
+
+This prevents the assembler from generating an undefined symbol error when the library is not used.
+
+5. Modify LIBLOAD9.TXT so that it contains the lines
+            IF LIBU09
+            lib libu09
+            ENDIF
+These lines cause the lib directive to include LIBU09.TXT (the users assembler routines) at assemble time but only if the label LIBU has been SET to 1. Since LIBU09 is SET to 0 by default this must mean that the file user.h was included in the program.
+
+6. In LIBU09.TXT each C callable subroutine must have a lower case label as its name and only entry point. All other labels must be in upper case. Each routine must be backeted as shown below.
+    *
+            IF ROUTINE
+    routine etc
+            etc
+            rts
+            ENDIF
+    *
+Note that if routine calls another subroutine that is also C callable the other routine will need to be included if routine is called. This means that the IF line for the other routine needs to be IF OTHER|ROUTINE. Now if a routine is called from C but is not defined in the C program the EXT macro causes a ROUTINE SET 1 to be assembled. If this occurs then the routine is conditionally assembled into the program. If it does not occur then the routine will not be present in the executable command. This saves space on the disk and simulates the actions of a linker.
+
+7. Finally, copy LIBDEF09.TXT to LIBDEF.TXT and copy LIBLOAD9.TXT to LIBLOAD.TXT. EXEC GOTO9 has the same effect. This is required because the 6801 and 68000 versions of the compiler use LIBDEF.TXT and LIBLOAD.TXT to switch code generation.
+,in 0
+,pp
+When the assembler goes through the macro file it first sees lib libdef. The file LIBDEF.TXT contains lib directives for the macro definition file and flex equates, followed by definitions of names of library files that might be loaded and definitions of the names of the default library routine names, all SET 0. Next comes the code that was included using the #include "user.h" (assuming that it was included at the top of the program). This is LIBU SET 1 and ROUTINES SET 0. After all the program code comes the EXT section where the routines that were used are SET 1. This is followed by lib libload. The file LIBLOAD.TXT checks to see which runtime libraries are in use and performs a lib libu because LIBU was SET 1 earlier. Inside LIBU.TXT only the routines that were used have been SET 1 so only they are conditionally assembled in. Easy isn't it!
+
+
+7.2  Inline Assembler
+,pp
+Inside a C function inline code can be inserted in assembler. The above section explains the stack organisation and gives the required information for accessing parameters and local variables. This section covers global variables, assembler labels and register useage.
+,pp
+Global variables in C are all allocated in a block at the end of the program with labels that are identical to the names used in the C program. They can therefore be accessed without any problems from assembler. All of the C globals should have lower case names as this avoids conflicts with assembler labels.
+,pp
+The FLEX assembler distinguishes between upper and lower case names and this ability is essential to the operation of the small-C compiler. The standard, which should be adhered to, is that all C names (global variables and function names) are in lower case while all assembler names (except the entry points for C callable subroutines) are in upper case. The whole of the runtime library is assembled together with the C program so that any new assembler labels should be checked against the existing runtime library routines to check for conflicts.
+,pp
+All the labels required by the compiler are generated as "ccNNNN" where NNNN is a unique number.
+,pp
+The compiler uses the D register as its main operation register, the system stack is used to store local variables, temporary values and return addresses, the Y register is used as a temporary register when simulating a "LEAD n,S" by
+"LEAY n,S", "TFR Y,D", the X and U registers are only used in the multiply, divide and shift routines. The runtime library routines can use any registers.
+
+e.g.
+
+        mulby8(n)       /* quick multiply by 8 */
+                int n;  /* single integer parameter */
+                {
+                n;      /* name variable to cause reg load*/
+        #asm            /* start assembler */
+                aslb    /* shift D left 3 places */
+                rola
+                aslb
+                rola
+                aslb
+                rola
+        #endasm         /* end assembler */
+                }       /* value returned in D */
+
+
+        Compiler output for the above routine:
+
+        mulby8
+                ldd 2,s         get n
+                aslb
+                rola
+                aslb
+                rola
+                aslb
+                rola
+                rts             return val in D

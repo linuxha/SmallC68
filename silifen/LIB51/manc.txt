@@ -1,0 +1,141 @@
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Small-C Compiler R1.1
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+`$1B,'!,56`
+     Small-C Compiler
+`$1B,'!,8`
+
+,PG
+
+
+
+
+
+,CE 1
+Contents
+,rj
+Page
+,IN 16
+Index
+
+1.  Introduction                              1
+
+2.  Tutorial                                  4
+
+3.  Compiler Operation                       12
+
+4.  Small-C Language Definition              17
+
+5.  Differences from Standard C              37
+
+6.  The Runtime Libraries                    39
+
+7.  Assembler Interfacing                    70
+
+8.  The Output Macros and Optimisation       76
+
+9.  The Image in Memory                      77
+
+10. Error Messages and Debugging             79
+
+
+Appendix A.     Graphics Library Option
+
+Appendix B.     6801 Cross Support Option
+
+
+,in 0
+,pg
+
+
+
+
+,ce
+Acknowledgments
+
+,in 8
+Thanks to:
+
+Ron Cain for starting something.
+
+Colin Tapp for typing it in.
+
+Andy Biggs for proofreading the manual.
+
+CCL for Xenix.
+
+Dave Rumball for the Microbox ][.
+
+Chris Lindsay for help and encouragement.
+
+Linda for putting up with it.
+
+,in 0
+
+
+
+
+
+
+
+
+
+
+
+,pp
+The small-C compiler, runtime libraries and manual are copyright Silicon Fen Software, Adrian Cockcroft 1984, 1985.
+
+                Silicon Fen Software
+                39, Mason Road
+                Burwell
+                Cambridgeshire
+                CB5 0BG
+                England
+
+
+
+NOTE:
+   FLEX is a trademark of Technical Systems Consultants Inc.
+   Unix is a trademark of AT&T.
+   Xenix is a trademark of Microsoft.
+

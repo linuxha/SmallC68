@@ -1,0 +1,392 @@
+,pn 27
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Small-C Language Definition
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+,pg
+
+
+4.11  Statements
+,pp
+Statements are the basis of function declarations and form the code which is executed. Usually statements are executed in sequence. Statements are terminated by semicolons. 
+,in 4
+
+4.11.1  Expression Statements
+,pp
+Most statements are expression statements which have the form:
+        expression;
+,pp
+Usually these expressions are assignments or function calls e.g.
+
+        a = b + 1;
+or
+        strcpy(s1,s2);
+
+
+4.11.2  Compound Statements (Blocks)
+,pp
+Anywhere where a single statement can appear, a compound statement, i.e. block of statements enclosed in braces can appear.
+
+compound-statement:
+        {
+        statement-list
+        }
+
+e.g.
+        {
+        a = b + 1;
+        strcpy(s1,s2);
+        }
+
+
+The braces {} denote the limits of the block. Every { must be matched by a corresponding }. Blocks may be laid out according to the users preference. There are at least three common styles in use amongst C programmers. These are shown below.
+,pg
+
+,in 8
+
+Style 1.
+
+This is the style adopted in this manual.
+
+funct()
+    {
+    while(1)
+        {
+        if (expr)
+            {
+            statement-list;
+            }
+        else
+            {
+            statement-list;
+            }
+        }
+    }
+
+
+Style 2.
+
+funct()
+{
+    while(1)
+    {
+        if (expr)
+        {
+            statement-list;
+        }
+        else
+        {
+            statement-list;
+        }
+    }
+}
+
+
+Style 3.
+
+funct() {
+    while(1) {
+        if (expr) {
+            statement-list;
+        } else {
+            statement-list;
+        }
+    }
+}
+,in 4
+
+,pp
+The most important thing about layouts is to choose a style and stay with it so that programs written now will be easily readable in the future.
+
+
+4.11.3  Conditional Statement
+,pp
+This has two possible forms:
+
+if (expression)
+    statement;
+
+and
+
+if (expression)
+    statement1;
+else
+    statement2;
+
+,pp
+The expression is evaluated and if it is non zero then the first statement is executed and the second (if present) is skipped. If the else is present and the expression is zero then the first statement is skipped and the second statement is executed. Note that the semicolon statement terminator is required before the "else". 
+
+4.11.4  While Statement
+,pp
+The while statement has the form:
+
+while(expression)
+    statement;
+
+,pp
+The statement is executed repeatedly as long as the expression has a non zero value. The test takes place before each execution of the statement.
+
+
+4.11.5 Do Statement
+
+do
+    statement;
+while(expression);
+,pp
+The statement is always performed at least once before the expression is evaluated. If the expression is zero then the loop exits. If the expression is non-zero then the statement is performed again.
+
+,nl 18
+4.11.6 For Statement
+
+for (expression1; expression2; expression3)
+    statement;
+
+,pp
+This is almost equivalent to:
+
+
+expression1;
+while(expression2)
+    {
+    statement;
+    expression3;
+    }
+
+,pp
+The exception is that a continue; statement will jump to expression3 if it occurs in a for loop and would jump to expression2 if it occurs in the while loop shown.
+,pp
+Expression1 sets up the loop, expression2 tests to see if the loop body is to be performed, expression3 sets up the next iteration of the loop. The equivalent statement in Pascal and Basic is shown below. It can be seen that the C for loop is much more flexible.
+
+Pascal:
+
+FOR i := 1 TO 100 DO
+    statement;
+
+
+Basic:
+
+10 FOR I = 1 TO 100 STEP 1
+20 statement
+30 NEXT I
+
+
+C:
+
+for( i=1; i<=100; ++i )
+    statement;
+
+
+
+4.11.7  Switch Statement
+,pp
+This is not implemented in small-C. The common form can be simulated using a chain of if else statements.
+
+,nl 5
+4.11.8  Break Statement
+,pp
+The statement
+
+            break;
+
+Terminates the current innermost while or for loop (or switch statement if implemented).
+
+e.g.
+
+for( i=0; i<80; ++i )
+    if (getchar()==EOF)
+        break;
+
+This reads 80 characters but gives up if it encounters an end of file marker. Break can be regarded as a structured goto for exiting loops.
+
+
+4.11.9  Continue Statement
+,pp
+The statement
+
+            continue;
+
+aborts the rest of the statements in the current while or for loop. In a for loop expression3 is performed next but in a while loop it goes directly to the test at the top of the loop. The test is executed as usual. Continue is a structured goto for aborting the rest of the statements in a loop but does not exit the loop.
+
+
+4.11.10  Return Statement
+,pp
+A function can return to its caller before it reaches the end of the function using the return statement. If the function is required to return a value then it must only return to its caller via a return statement which has a value as part of the statement. If the function does not return a value explicitly then a garbage value is returned.
+
+e.g.
+To return without a defined value:
+
+    return;
+
+To return a value:
+
+    return expression;
+
+
+4.11.11  Goto Statement
+,pp
+The goto statement is not implemented in small-C (genuine gotoless programming). Break, continue and return provide a structured equivalent of goto.
+
+
+4.11.12  Label Statement
+,pp
+The label statement is not implemented. 
+
+4.11.13  Null Statement
+,pp
+The null statement has the form
+
+            ;
+
+it performs no action but is useful for while loops that have no body, to make the syntax legal.
+
+e.g. If s is a pointer to a string then
+
+            while(*s++);
+
+will move s to point to the null character at the end of the string. It is also used in for loops when one of the expressions is not required.
+
+e.g. The statement
+
+for( ; expression2; ) statement;
+
+is equivalent to
+
+while( expression2 ) statement;
+
+,in 0
+
+
+4.12  Function Definitions
+,pp
+A function is a named section of code which accepts parameters and returns a value. It is equivalent to an assembly language subroutine with parameters being passed on the stack.
+,pp
+C compilers do not check that the correct number or type of parameters is passed to a function when it is called, this is up to the programmer. (Unix systems have a separate C checker program called "lint" which does sophisticated checks but this is not available for small-C ).
+,pp
+Functions may not be defined inside another function definition in C, unlike in Pascal.
+
+Function-definition:
+        identifier(parameter-list)
+                declaration-list;
+                compound-statement
+
+,pp
+Only the identifiers given in the parameter list may be declared in the declaration list. Local variables for the function are declared in the compound statement. All small-C functions return 16 bit values which can be interpreted as integers, pointers or sign extended characters.
+
+e.g.
+        /* return the maximum value of a,b and c */
+        max(a,b,c)              /* parameter-list */
+                int a,b,c;      /* declaration-list */
+                {               /* compound statement */
+                int m;          /* local variable */
+                if (a > b)
+                        m = a;
+                else
+                        m = b;
+                if (c > m)
+                        m = c;
+                return m;       /* function returns m */
+                }
+
+,pp
+The function max cannot have a type specifier in small-C and the C syntax assumes integer.
+
+
+
+
+4.14  Preprocessor Control Lines
+
+,in 4
+4.14.1  Token Replacement
+,pp
+The line
+
+            #define identifier token-string
+
+(with no terminating semicolon) causes every instance of the identifier as a complete word to be substituted by the token string.
+
+e.g.
+            #define BUFS    10
+            #define BUFSIZE 20
+
+would cause
+            int a[BUFS];   to become int a[10];
+and
+            int b[BUFSIZE]; to become int b[20];
+
+,pp
+BUFS and BUFSIZE are distinct even though BUFS is a substring of BUFSIZE. Any text can be substituted in but the name used to refer to the token-string must be a valid identifier, i.e. it must start with an alphabetic character or an underline.
+,nl 12
+
+e.g. (for Pascal freaks!)
+
+#define BEGIN       {
+#define END         ;}
+#define WHILE       while
+#define TRUE        (1)
+
+WHILE TRUE
+    BEGIN
+    i = j + k
+    END;
+,pp
+Note that #define := =  would not work because := is not a valid identifier name.
+
+
+4.14.2  File Inclusion
+,pp
+The line
+
+            #include "filename"
+
+causes the replacement of the line by the entire contents of the file specified. The filename is in the standard flex filename format. The form using angle brackets i.e. <filename> is not supported by small-C since there are no standard places for include files to be found. The default is the work disk. (unlike Unix - the angle brackets mean "dont look in the current directory" ).
+
+
+4.14.3  Inline Assembler
+,pp
+As an extension to standard unix (i.e. if this is used the unix compiler won't like it) text can be passed straight through the compiler and into the assembly code output file without being changed. This allows the use of inline assembly language at any point in a small-C program. Section 7 of this manual on assembler interfacing explains how to use this feature. The line
+
+            #asm
+
+introduces a block of assembler and the line
+
+            #endasm
+
+will terminate a block.
+
+
+4.14.4  Conditional Compilation
+,pp
+Conditional compilation is not yet implemented in small-C but it is under development. The constructs are shown below:
+
+            #ifdef identifier /* or #ifndef identifier*/
+
+            #else
+
+            #endif
+
+
+,in 0
+4.15  Implicit Declarations
+,pp
+In an expression, an identifier used but not already declared is automatically declared to be "function returning integer". This means that functions do not have to be declared before they are used and can, in fact be placed in any order in the source file. It is common practice amongst C programmers to make the source file read in a "top down" manner, with main() at the beginning. This is in contrast to Pascal where files have to be arranged in a bottom up manner unless forward declarations are used.
+

@@ -1,0 +1,160 @@
+,pn 1
+,pl 66
+,lm 11
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Appendix B  6801 Code Generation
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+### B
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+
+`$1B,'!,24`
+
+,CE 1
+Appendix B      6801 Code Generation
+`$1B,'!,8`
+
+,pp
+ This compiler generates a processor independent macro language rather than straight assembly code. In normal operation macro definitions are used to turn the macro language into 6809 code. Macro definitions are also provided which generate 6801 code and will soon be available to generate 68000 code. There is nothing to stop a user rewriting the macros, using the 6801 and 6809 definitions as a model, for any processor capable of supporting 16 or 32 bit operations. The 6801 probably represents the simplest processor worth using with small-C. Requests for the 6805 have been made but the problems are immense and it would not be a viable product. If any users succeed in writing macros for another processor they should let Silicon Fen Software know so that other users can benefit.
+,pp
+An article on the methods used for 6801 code generation and conditional assembly is reproduced at the end of this appendix.
+,pp
+To get a program onto the 6801 it is compiled in the usual way but it must be assembled with a 6801 macro assembler using a different set of lib???.txt files.
+,pp
+The 6801 is a single chip micro with an instruction set and registers based on the old 6800. It is a lot less powerful than the 6809 since it has fewer registers and a weaker instruction set.
+,pp
+There are some developments of the 6801 which are very similar. The 6803 is a 6801 without onboard ROM. The 68701 is a 6801 with onboard EPROM. The 6811 is an enhanced 6801 with extra instructions. Hitachi have produced CMOS versions which have an enhanced instruction set. The 6301 is the basic model. The 6303 has no onboard ROM. For each of the above processors there are variations in the I/O and memory capabilities which are designated by suffixes to the part number.
+,pp
+Because of the variety of configurations the user must be prepared to customise the code generation slightly for each model and the runtime library must also be customised by the user. Unlike the 6809 there is no operating system to provide terminal I/O and disk operations but the 6801 is normally used in embedded controllers with dedicated I/O requirements so  the user would have to write interfacing subroutines anyway.
+,pp
+6801 runtime library routines are provided for string and character handling and some numerical operations (corresponding to those provided for 6809 use). A subset of the 6809 I/O routines is provided which call user supplied low level operations. These low level operations correspond to the FLEX terminal I/O calls.
+,pp
+The chapter on assembler interfacing applies to the 6801 just as for the 6809. Obviously the 6809 library routines, which are written mainly in assembler, cannot be used.
+,pp
+ The procedure to be followed when writing for a 6801 is now set out.
+,pp
+These instructions assume the use of EXEC command files which setup the required library files on the work disk. These command files are written for use on a Microbox ][ which is setup in a particular way. If another machine is used or the Microbox ][ cannot be setup in the required way then the user must read the EXEC command files and perform equivalent actions.
+,pp
+The Microbox ][ setup is to have the system disk set to ALL and the work disk set to 1 using ASN S=A W=1. The promdisk is set to drive 0, the ramdisk is set to drive 1 and should be 390 sectors, the floppy is set to drive 2. Drive 3 is not required and can be a second floppy or another image of the promdisk. Use ALLOCATE 2301 or 2302. The promdisk needs to contain the following commands used by the EXEC command files: EXEC.CMD, ECHO.CMD, CONTIN.CMD, Y.CMD and COPY.CMD. These are standard FLEX utilities except for CONTIN.CMD which outputs "CONTINUE?" and if it doesn't get a 'Y' back it aborts the EXEC. Calls to CONTIN could be removed from the command files but it makes them  better to use.
+,pp
+ The idea is to have the library files loaded from the  floppy to the ramdisk using EXEC 2.GET01 or EXEC 2.GET09. The libraries and compiler commands could be on the same disk as the users program or separate disks could be used (the former is assumed). If both sets of libraries are on the ramdisk then code generation can be switched using EXEC GOTO9, EXEC GOTO1 or EXEC GOTO91. The details are explained below. It is useful to have CC.CMD, OPT.CMD, ASMB.CMD, XASM6801.CMD on the promdisk but some of these may be on the floppy with the users files. The ramdisk should be kept clear of commands to leave room for the temporary .M and .OM files. The instructions below assume the setup that has been described.
+,in 4
+
+1. Write a program in small-C and test it on the 6809 FLEX host machine. The libraries should be loaded using EXEC 2.GET09. Assembly code written inline using the #asm and #endasm compiler directives can be in 6801 code since the 6809 assembler will accept the mnemonics and translate them into 6809 code automatically. Use debuggers and extra terminal output to check the operation of the program.
+
+2. Load the 6801 library files (in addition to the 6809 libraries) using EXEC 2.GET01. The next stage is to try out the 6801 macro definitions using the 6809 assembler.
+Use EXEC GOTO91 to set up the correct versions of libdef.txt and libload.txt which will now include the 6809 libraries except that libm01 (macro definitions) and libc01 (standard library) will be substituted for the 6809 versions. Now assemble as usual and retest your program. At this stage, 6801 mnemonics are being translated into the 6809 equivalent but the code will only use the subset of the 6809's facilities that is available on the 6801 so the program will be bigger and slower than the one tested in stage 1. If there are problems at this stage then go back to stage 1 and see if the problems persist. If the problems are only present in the stage 2 program then the 6801 macro definitions or runtime library may be at fault. Try to isolate the problem and, if necessary, report it (and any suggested solutions) in writing to Silicon Fen Software. (Note that this is a low cost product and a high level of technical support is not available.) When the program has been tested successfully proceed to stage 3.
+
+3. Remove all calls to library routines which are not supported in the 6801 libraries. Alternatively, write your own routines to substitute for the 6809 ones. The 6809 versions can be used as a guide when writing library routines since the source code in assembler is provided in the files libc09.txt and libs09.txt. The conditional assembly system is still used with 6801 libraries so that only the routines that are actually called by the program are assembled into the output.
+
+4. Use EXEC GOTO1 to set up the correct versions of libdef.txt and libload.txt for 6801 code generation with 6801 libraries. Recompile the new version of the program that only calls 6801 library routines. Use the optimiser as usual, it optimises the macro language so it works for any processor.
+
+5. It is advisable to assemble for 6809 again (taking advantage of the 6809 assemblers translation of 6801 mnemonics to 6809 code) and run under FLEX, using a debugger to control and test the program if neccessary. This may show up problems in some of the 6801 code library routines written by the user or used from libs01 (terminal I/O).
+
+6. Assemble with a 6801 cross assembler (XASM6801). The assembler must follow the conventions of the TSC 6809 assembler exactly with respect to macro definitions, expressions, conditional assembly, case sensitivity and assembler directives. A TSC based 6801 assembler is available which works but CRASMB and XMACE will not work. A 6801 debugger/simulator is believed to be available from Windrush which would allow further testing on the host computer. The 6801 cross assembler output must be put into your 6801 system somehow but that's up to you. You should find that the 6801 code is smaller and faster than a 6809 pretending to be a 6801 but is larger and slower than the normal 6809 code.
+
+,in 0
+
+,ce
+Setting up for a particular processor
+,pp
+Some options are built into the 6801 macro definitions which take advantage of the extra features of the 6811 or 6301. If you are using one of these enhanced processors then edit the LIBM01.TXT file and follow the instructions at the head of the file. For the 6301 family an alternative assembler, XASM6301 is available but the compiler currently only uses the xgdx instruction which could be simulated for XASM6801 using an fcb.
+,pp
+The origin of the RAM and ROM segments may also need to be set by the user, this is done by editing LIBF01.TXT and following the instructions.
+
+
+,ce
+Notes on C programs for the 6801
+
+,pp
+The 6801 code generation can cope with anything that will run on a 6809. There are no restrictions on array sizes or numbers of local variables other than the restrictions of available memory on the 6801 target. However, stack offset calculations are slow on the 6801 and they get much slower as the offset grows. For speed and space savings local, stack based, variables should be avoided and the number of arguments passed to a function should be minimised. This is bad programming practise so care needs to be taken to produce good reliable code.
+,pp
+If a basic 6801 system is being used that only has a few hundred bytes of RAM then great care must be taken with the stack useage to make sure that it cannot overwrite any global data locations. If this is critical then the PUSH and INCS macros could be changed to include code that checks the position of the stack each time it is added to against a preset limit and jumps to an error routine if the limit is exceeded. This could increase the program size substantially so a better alternative would be to write a library routine to check the stack and to call it at appropriate places in the program.
+,pp
+Interrupts can be used with small-C programs. The code is reentrant and can be recursive if local variables are used. An interrupt routine could be vectored to some code written in small-C if required but an rti instruction would have to be inserted at the end using #asm.
+,pp
+Any users who write a set of C callable 6801 (or 6811 or 6301..) library or hardware access routines are strongly encouraged to document them and make them available to other users. Silicon Fen Software is concentrating on the 68000 and has no plans to use 6801s or to develop further software for single chip micros but is willing to coordinate other users contributions.
+
+,ce
+The 6801 C library routines
+,pp
+Most of the routines provided for 6809 use have been duplicated for 6801 use. The main exceptions are the file I/O routines and the Microbox ][ graphics routines. The routines are listed below with comments. See the 6809 definitions in section 6 for details on the use of these routines. 
+,pg
+        Source Language  
+Name    6809    6801    Library          Comments
+----    ----    ----    -------          --------
+printf  C       C       libp    Same copy for 6801 and 6809. 
+
+START   asm     asm     libc    Entry point. 
+CCASR   asm     asm     libc    Shift right operator.
+CCASL   asm     asm     libc    Shift left operator.
+CCMUL   asm     asm     libc    16 bit multiply.
+CCDIV   asm     asm     libc    16 bit divide.
+exit    asm     asm     libc    6801 stub for 68091 use.
+system  asm     asm     libc    6801 stub for 68091 use.
+strcat  asm     C       libc    string concatenate 6801
+strncat asm     C       libc    string concat n chars 6801
+strcmp  asm     C       libc    string compare 6801
+strncmp asm     C       libc    string compare n  6801
+sign    asm     C       libc    return sign of int 6801
+strcpy  asm     C       libc    string copy 6801
+strncpy asm     C       libc    string copy n  6801
+strlen  asm     asm     libc    string length
+index   asm     asm     libc    find char in string 6801
+rindex  asm     C       libc    find last char 6801
+fill    asm     C       libc    fill buffer  6801
+abs     asm     asm     libc    return abs of int
+itob    C       C       libc    integer to string, any base
+btoi    C       C       libc    string to integer, any base
+
+gets    asm     asm     libs    get string  6801
+puts    asm     asm     libs    put string  6801
+putchar asm     asm     libs    put character  6801
+getchar asm     asm     libs    get character  6801
+putdec  asm      -      libs    calls FLEX OUTDEC, 6809 only
+puthex  asm     C       libs    output 16 bit hex string
+fgetc   asm     asm     libs    get char from stream 6801
+fputc   asm     asm     libs    put char on stream 6801
+frdchk  asm     asm     libs    check for input  6801
+fputs   asm     asm     libs    put string to stream 6801
+fgets   asm     C       libs    get up to n chars 6801
+
+                        liba    6801 version not yet ready
+toupper asm      -      liba    convert to upper case
+tolower asm      -      liba    convert to lower case
+isalpha asm      -      liba    test alphabetic
+isdigit asm      -      liba    test numeric
+isupper asm      -      liba    test upper case
+islower asm      -      liba    test lower case
+
+                        libg    6801 version not provided
+
+                        libh    6801 hardware routines
+GETCHR  FLEX     -      libh    get char from port
+PUTCHR  FLEX     -      libh    put char to port
+PCRLF   FLEX     -      libh    put newline to port
+STAT    FLEX     -      libh    check port for input
+
+
+
+,pp
+Note that some of the above routines are quite large and pull in other routines. The worst example is printf which uses strlen, abs, putchar, itob and btoi. In turn, itob and btoi use the multiply and divide routines and the result is over 2k of code on a 6809 or about 3-4k of code on a 6801. This must be weighed against the power and flexibility of printf. The code is only loaded if printf is used by a program and it is only needed once however many times it is used. If a 6801 routine that was written in C is a bottleneck then rewriting it in assembler will help a lot. The code generation for 6801 is not that wonderful but it is much easier to write in C than 6801 assembler and programs are quicker to debug since 90% of the problems with assembler seem to be stack crashes.
+

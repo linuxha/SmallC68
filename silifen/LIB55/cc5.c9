@@ -1,0 +1,240 @@
+/* cc5.c9 R1.0 10/3/85  recursive descent expression evaluator */
+
+/* lval[0] - symbol table address - 0 for constant */
+/* lval[1] - type of indirect obj to fetch - 0 for static */
+/* this file contains assignment, logical operators and comparisons */
+
+expression()
+     {
+     int     lval[2];
+     if ( heir1(lval) )
+            rvalue(lval);
+     }
+
+heir1(lval)
+     int  lval[];
+     {
+     int     k;
+     int     lval2[2];
+     k = heir2(lval);
+     if ( match("=") )          /* need an lvalue to put result in */
+            {
+            if ( k == 0 )
+                    {
+                    needlval();
+                    return 0;
+                    }
+            if ( lval[1] )
+                    push();
+            if ( heir1(lval2) )
+                    rvalue(lval2);
+            store(lval);
+            return 0;
+            }
+     else return k;
+     }
+
+heir2(lval)
+int  lval[];
+     {
+     int     k;
+     int     lval2[2];
+     k = heir3(lval);
+     blanks();
+     if ( ch != '|' )
+            return k;
+     if ( k )
+            rvalue(lval);
+     while ( 1 )
+            {
+            if ( match("|") )
+                    {
+                    push();
+                    if ( heir3(lval2) )
+                            rvalue(lval2);
+                    or();              /* auto pop in or */
+                    }
+            else return 0;
+            }
+     }
+
+heir3(lval)
+int  lval[];
+     {
+     int     k;
+     int     lval2[2];
+     k = heir4(lval);
+     blanks();
+     if ( ch != '^' )
+            return k;
+     if ( k )
+            rvalue(lval);
+     while ( 1 )
+            {
+            if ( match("^") )
+                    {
+                    push();
+                    if ( heir4(lval2) )
+                            rvalue(lval2);
+                    xor();             /* auto pop in xor */
+                    }
+            else return 0;
+            }
+     }
+
+heir4(lval)
+int  lval[];
+     {
+     int     k;
+     int     lval2[2];
+     k = heir5(lval);
+     blanks();
+     if ( ch != '&' )
+            return k;
+     if ( k )
+            rvalue(lval);
+     while ( 1 )
+            {
+            if ( match("&") )
+                    {
+                    push();
+                    if ( heir5(lval2) )
+                            rvalue(lval2);
+                    and();             /* auto pop in and */
+                    }
+            else return 0;
+            }
+     }
+
+heir5(lval)
+int  lval[];
+     {
+     int     k;
+     int     lval2[2];
+     k = heir6(lval);
+     blanks();
+     if((streq(line+lptr,"==")==0) & (streq(line+lptr,"!=") == 0 ))
+            return k;
+     if ( k )
+            rvalue(lval);
+     while ( 1 )
+            {
+            if ( match("==") )
+                    {
+                    push();
+                    if ( heir6(lval2))
+                            rvalue(lval2);
+                    eq();  /* takes one param in D and other on stack */
+                    }
+            else if ( match("!=") )
+                    {
+                    push();
+                    if ( heir6(lval2) )
+                            rvalue(lval2);
+                    ne();
+                    }
+            else return 0;
+            }
+     }
+
+heir6(lval)
+int  lval[];
+     {
+     int     k;
+     int     lval2[2];
+     k = heir7(lval);
+     blanks();
+     if ( (streq(line + lptr,"<") == 0 ) &
+            (streq(line + lptr,">" ) == 0 ) &
+            (streq(line + lptr , "<=" ) == 0 ) &
+            (streq(line + lptr , ">=" ) == 0 ) )
+                    return k;
+     if ( streq( line + lptr , ">>" ) )
+            return k;
+     if ( streq( line + lptr , "<<" ) )
+            return k;
+     if ( k )
+            rvalue(lval);
+     while(1)
+            {
+            if ( match("<=") )
+                    {
+                    push();
+                    if ( heir7(lval2) )
+                            rvalue(lval2);
+                    if ( cptr = *lval )
+                            if (cptr[IDENT] == POINTER )
+                                    {
+                                    ule();
+                                    continue;
+                                    }
+                    if ( cptr = *lval2 )
+                            if ( cptr[IDENT] == POINTER )
+                                    {
+                                    ule();
+                                    continue;
+                                    }
+                    le();
+                    }
+            else if ( match(">=") )
+                    {
+                    push();
+                    if ( heir7(lval2) )
+                            rvalue(lval2);
+                    if ( cptr = *lval )
+                            if ( cptr[IDENT] == POINTER )
+                                    {
+                                    uge();
+                                    continue;
+                                    }
+                    if ( cptr = *lval2 )
+                            if ( cptr[IDENT] == POINTER )
+                                    {
+                                    uge();
+                                    continue;
+                                    }
+                    ge();
+                    }
+            else if((streq(line+lptr,"<"))&(streq(line+lptr,"<<")==0))
+                    {
+                    inbyte();
+                    push();
+                    if ( heir7(lval2) )
+                            rvalue(lval2);
+                    if ( cptr = *lval )
+                            if ( cptr[IDENT] == POINTER )
+                                    {
+                                    ult();
+                                    continue;
+                                    }
+                    if ( cptr = *lval2 )
+                            if ( cptr[IDENT] == POINTER )
+                                    {
+                                    ult();
+                                    continue;
+                                    }
+                    lt();
+                    }
+            else if((streq(line+lptr,">"))&(streq(line+lptr,">>")==0))
+                    {
+                    inbyte();
+                    push();
+                    if ( heir7(lval2) )
+                            rvalue(lval2);
+                    if ( cptr = *lval )
+                            if ( cptr[IDENT] == POINTER )
+                                    {
+                                    ugt();
+                                    continue;
+                                    }
+                    if ( cptr = *lval2 )
+                            if ( cptr[IDENT] == POINTER )
+                                    {
+                                    ugt();
+                                    continue;
+                                    }
+                    gt();
+                    }
+            else return 0;
+            }
+     }

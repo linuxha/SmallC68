@@ -1,0 +1,404 @@
+/* cc4.c9 R1.1 24/4/85 */
+
+keepch(c)
+char c;
+/**store the character in the temporary store used for the processed input
+line.This is used by preprocess.This function returns the argument to the
+calling function,and bumps up the temporary line pointer,if the line is not
+full
+*/
+     {
+     mline[mptr] = c;
+     if( mptr < MPMAX) ++mptr;
+     return (c);
+     }
+
+preprocess()
+/**this function preprocess C input lines to allow the compiler to operate
+it performs the following:-
+1)   it strips out comments
+2)   it strips out strings of whitespaces,and replaces them with a single
+             space
+3)   it checks for balanced '"' and '''
+4)   performs #define substitutions
+It preprocesses the line,putting the results in mline[],transfering them back
+to line when processing is complete
+*/
+     {
+     int k;
+     char c, sname[NAMESIZE];
+     if( cmode == 0 ) return;                /*do not process #asm lines*/
+     mptr=lptr=0;
+     setch();
+     while( ch )           /*until end of line*/
+             {
+             if(( ch==' ')|(ch==9))      /*look for whitespaces*/
+                     {
+                     keepch(' ');            /*replace with single space*/
+                     while(( ch==' ')|(ch==9))
+                             gch();          /*dump rest of whitespaces*/
+                     }
+             else if ( ch =='"')           /*look for strings*/
+                     {
+                     keepch( ch );         /*and keep opening quotes*/
+                     gch();                  /*and pass on rest of string*/
+                     while(ch!= '"')
+                             {
+                             if( ch==0)            /*end of line*/
+                                     {
+                                     error("missing quote");
+                                     break;
+                                     }
+                             keepch( gch() );
+                             }
+                     gch();
+                     keepch('"'); /*output matching quotes*/
+                     }
+             else if ( ch ==39 )
+                     {
+                     keepch(39);
+                     gch();
+                     while( ch != 39 )
+                             {
+                             if( ch == 0 )
+                                     {
+                                     error("missing apostrophe");
+                                     break;
+                                     }
+                             keepch( gch() );
+                             }
+                     gch();
+                     keepch(39);
+                     }
+             else if( (ch=='/')&(nch=='*')) /*strip out comments*/
+                     {
+                     inchar(); inchar();
+                     while((( ch=='*')&(nch=='/')) == 0 )
+                             {
+                             if( ch==0)
+                                     inline();
+                             else    inchar();
+                             if( eof ) break;
+                             }
+                     inchar(); inchar();
+                     }
+             else if( an(ch ) ) /*strip off string name and look
+                                  for substitution in macro table*/
+                     {
+                     k = 0;
+                     while( an( ch ))
+                             {
+                             if( k < NAMEMAX)        /*store string name*/
+                                     {
+                                     sname[k++] = ch;
+                                     }
+                             gch();
+                             }
+                     sname[k] = 0;           /*append a null to terminate*/
+                     if( k = findmac(sname))
+                             {
+                             while( c= macq[k++])    /*substitute*/
+                                     {
+                                     keepch(c);
+                                     }
+                             }
+                     else
+                             {
+                             k=0;
+                             while(c=sname[k++]) /*else copy first string*/
+                                     {
+                                     keepch(c);
+                                     }
+                             }
+                     }
+             else keepch(gch() );
+             }
+     keepch(0);
+     if( mptr >= MPMAX )
+             error("preprocessed line too long");
+     strcpy(line,mline);
+     lptr = 0;
+     setch();
+     }
+
+addmac()
+/**this function adds a macro definition to the table
+the form is the string followed by a null,followed by the replacement string
+again terminated by a null.This function gives up if the macro table is full.
+nothing is returned
+*/
+     {
+     char sname[NAMESIZE];
+     int k;
+     if ( symname(sname)==0)
+             {
+             illname();
+             kill();
+             return;
+             }
+     k = 0;
+     while( putmac( sname[ k++] ));
+     while( ch==' ' | ch == 9 ) gch();
+     while( putmac( gch() ) );
+     if ( macptr >= MACMAX)  error("macro table full");
+     }
+
+putmac(c)
+/**append the character in the macro list
+this function returns the argument
+*/
+char c;
+     {
+     macq[macptr]=c;         /*store character in the array*/
+     if( macptr<= MACMAX )
+             macptr++;               /*and bump up pointer if room is left*/
+     return (c);
+     }
+
+findmac(sname)
+/**this function tries to find the macro in the #define list
+if the character is found,the function returns the index of the string to
+be used as the replacement.If no match is found,then the function returns
+zero
+*/
+char *sname;
+     {
+     char *p;
+     p = macq;
+     while( p < macq + macptr )         /*search up to end of current list*/
+             {
+             if( astreq( sname, p ,NAMEMAX ) ) /*if a match is found*/
+                     {
+                     /*increment pointer past string and null to point to */
+                     /* replacement string*/
+                     return (p + 1 + strlen(p) - macq);
+                     }
+             p = p + strlen(p) + 1;   /*no match find next string*/
+             p = p + strlen(p) + 1;   /*next string is replacement string
+                                             find next definition*/
+             }
+     return (0);                     /*no match return 0*/
+     }
+
+outbyte(c)
+/**this function outputs a character to the output device. 
+if output = stdout the character is output to the screen */
+        char c;
+        {
+        if( c == 0) return (0);
+        if( fputc(c,output) != c)
+                {
+                closeout();
+                error("Output file error");
+                }
+        return(c);
+        }
+
+outstr(ptr)
+/**output the string to the disk if a file is open,otherwise the terminal*/
+        char    *ptr;
+        {
+        fputs(ptr,output);
+        if (ferror(output))
+                {
+                closeout();
+                error("Output file error");
+                }
+        }
+
+nl()
+/**output a carriage return to the output device */
+        {
+        outbyte( EOL );
+        }
+
+error(ptr)
+/**output an error message on the output device
+the incorrect line is printed,followed by another line with an arrow pointing
+to the error,and a further line,indicating the type of error
+*/
+char ptr[];
+     {
+     int k;
+     FILE *store;                              /*output device store*/
+     comment();
+     outstr(line);                   /*output the faulty line*/
+     nl();
+     comment();
+     k = 0;
+     while( k < lptr )
+             {
+             if( line[k]==9)  outbyte(9);
+             else outbyte(' ');
+             ++k;
+             }
+     outbyte('^');           /*output error pointer*/
+     nl();
+     comment();
+     if (input2)        /* include file is open */
+              {
+              outstr(incfnam);   /* print current file name */
+              outstr(": ");
+              outdec(incfline);  /* and line number */
+              }
+     else
+              {
+              outstr(infnam);
+              outstr(": ");
+              outdec(infline);
+              }
+     outstr("  ");
+     outsnl(ptr);                      /*print error message*/
+     ++errcnt;               /*bump up error count*/
+     if ( output != stdout )     /*output was not to terminal */
+             {
+             store = output; /* redirect output for outdec */
+             output = stdout;
+             putchar(EOL);
+             puts(line);               /*output faulty line to terminal*/
+             k = 0;
+             while( k < lptr )
+                     {
+                     if( line[k]==9)
+                             putchar(9);   /*output a tab*/
+                     else putchar(' ');
+                     ++k;
+                     }
+             puts("^");
+             if (input2)
+                     {
+                     ps(incfnam);
+                     ps(": ");
+                     outdec(incfline);
+                     }
+             else
+                     {
+                     ps(infnam);
+                     ps(": ");
+                     outdec(infline);
+                     }
+             putchar(' ');
+             puts(ptr);
+             output = store; /* restore output file */
+             }
+     }
+
+ps(ptr)
+/**this outputs the string to the terminal only,without a carriage return
+*/
+     char ptr[];
+     {
+     fputs(ptr,stdout);
+     }
+
+streq(str1,str2)
+/**this function matches string 1 against string 2.string 1 may be longer
+than 2.If the strings match,then the length of string 2 is returned,otherwise
+0 is returned
+*/
+char str1[],str2[];
+     {
+     int n;
+     n = strlen(str2);
+     if (strncmp(str1,str2,n))
+             return 0;
+     else
+             return n;
+     }
+
+astreq(str1,str2,len)
+     char str1[],str2[];
+     int len;
+     {
+     int k;
+     k = 0;
+     while( k <len )
+             {
+             if(( str1[k]) != (str2[k]) ) break;
+             if( str1[k]==0 ) break;
+             if( str2[k]==0 ) break;
+             k++;
+             }
+     if( an(str1[k]))return (0);
+     if( an(str2[k]))return (0);
+     return(k);
+     }
+
+match(lit)
+     char *lit;
+     {
+     int     k;
+     blanks();
+     if ( k = streq(line + lptr,lit) )
+             {
+             lptr = lptr + k;
+             setch();
+             return 1;
+             }
+     return 0;
+     }
+
+amatch(lit,len)
+     char *lit;
+     int  len;
+     {
+     int     k;
+     blanks();
+     if ( k = astreq(line + lptr , lit , len ) )
+             {
+             lptr = lptr + k;
+             setch();
+             while ( an(ch) )
+                     inbyte();
+             return 1;
+             }
+     return 0;
+     }
+
+blanks()
+     {
+     while (1)
+             {
+             while ( ch == 0 )
+                     {
+                     inline();
+                     preprocess();
+                     if (eof)
+                             break;
+                     }
+             if (( ch == ' ' ) | (ch == 9 ))
+                     gch();
+             else return;
+             }
+     }
+
+outdec(number)
+int  number;
+     {
+     int     k;
+     int     zs;
+     char    c;
+     zs = 0;
+     k = 10000;
+     if ( number < 0 )
+             {
+             number = ( - number );
+             outbyte('-');
+             if ( number < 0 )
+                   {
+                   outstr("32768");     /* -(-32768) == -32768 !!!! */
+                   return;
+                   }
+             }
+     while ( k >= 1 )
+             {
+             c = number / k + '0';
+             if ( (c != '0' ) | ( k == 1 ) | ( zs ) )
+                     {
+                     zs = 1;
+                     outbyte(c);
+                     }
+             number = number % k;
+             k = k / 10;
+             }
+     }

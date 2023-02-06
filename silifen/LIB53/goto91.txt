@@ -1,0 +1,3 @@
+echo change to 6801 code generation with 6809 flex I/O libraries
+y copy libdef91.txt libdef.txt
+y copy libld91.txt libload.txt

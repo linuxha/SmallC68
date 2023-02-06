@@ -1,0 +1,29 @@
+* libh.txt R1.1 31/8/85 hardware access library
+*
+* bottom level terminal I/O routines based on FLEX entry points
+*
+* must be defined by the user for a hardware configuration
+* remove "err" lines when defined.
+*
+* get a character into the A reg.
+GETCHR
+ err GETCHR not defined
+ rts
+*
+* output char in A reg to terminal
+PUTCHR
+ err PUTCHR not defined
+ rts
+*
+* output return and linefeed
+PCRLF
+ err PCRLF not defined
+ rts
+*
+* see if character can be read by GETCHR, return clear Z (not equal)
+* if one is ready else return set Z (equal) in CC register.
+STAT
+ err STAT not defined
+ rts
+*
+* end of libh

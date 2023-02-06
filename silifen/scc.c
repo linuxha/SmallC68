@@ -1,4 +1,5 @@
 /* cc1.c9 R1.1.1 4/7/85 */
+/* scc.c  v2.1.0 2023/02/06 <ncherry@linuxha.com> */
 
 #include <stdio.h>
 #include <stddef.h>

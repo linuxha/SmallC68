@@ -36,7 +36,8 @@ extern struct _IO_FILE *stderr;
 /* Silicon Fen Software Small-C compiler R1.1 for macro assembler */
 
 /* version string for use in ask() and header() */
-#define VERSION  "Silicon Fen Software: Small-C Compiler R1.1.0 4/7/85"
+//#define VERSION  "Silicon Fen Software: Small-C Compiler R1.1.0 4/7/85"
+#define VERSION  "Silicon Fen Software: Small-C Cross Compiler for Linux and the 68XX v2.1.0 2023/02/06"
 
 /* define symbol table parameters */
 #define SYMSIZ               14

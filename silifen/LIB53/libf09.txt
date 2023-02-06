@@ -1,0 +1,44 @@
+*
+* libf - flex equates for small-C compiler 
+*
+* Storage locations.
+LINBUF  EQU     $C080   Line buffer start.
+LINPTR  EQU     $CC14   Line buffer pointer
+FMSBASE EQU     $D409   FCB base pointer
+TTYBS   EQU     $CC00   TTYSET backspace character.
+SYSDRV  EQU     $CC0B   System drive number.
+WRKDRV  EQU     $CC0C   Working drive number.
+MONTH   EQU     $CC0E   FLEX system date.
+DAY     EQU     $CC0F
+YEAR    EQU     $CC10
+MEMEND  EQU     $CC2B   Memory end pointer.
+*
+* User callable routines.
+COLDS   EQU     $CD00   Cold start.
+WARMS   EQU     $CD03   Warm start.
+RENTER  EQU     $CD06   Main loop entry point.
+DOCMND  EQU     $CD4B   Call dos as a subroutine.
+STAT    EQU     $CD4E   Check terminal status.
+INCH    EQU     $CD09   Input character.
+INCH2   EQU     $CD0C   Input character.
+OUTCH   EQU     $CD0F   Output character.
+OUTCH2  EQU     $CD12   Output character.
+GETCHR  EQU     $CD15   Get a char (main routine).
+PUTCHR  EQU     $CD18   Put a char (main routine).
+INBUFF  EQU     $CD1B   Input into line buffer.
+PSTRNG  EQU     $CD1E   Print a char string.
+CLASS   EQU     $CD21   Classify a char.
+PCRLF   EQU     $CD24   Print a crlf.
+NXTCH   EQU     $CD27   Get next buffer char.
+RSTRIO  EQU     $CD2A   Restore i/o vectors.
+GETFIL  EQU     $CD2D   Get file spec.
+LOAD    EQU     $CD30   File loader.
+SETEXT  EQU     $CD33   Set file extension.
+OUTDEC  EQU     $CD39   Output decimal number.
+OUTHEX  EQU     $CD3C   Output hexadecimal number.
+OUTADR  EQU     $CD45   Output hex address.
+RPTERR  EQU     $CD3F   Report error.
+GETHEX  EQU     $CD42   Get hexadecimal number.
+INDEC   EQU     $CD48   Input decimal number.
+FMSCLR  EQU     $D400   Close all open files.
+FMS     EQU     $D406   FMS entry point.

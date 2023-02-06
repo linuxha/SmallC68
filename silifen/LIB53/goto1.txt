@@ -1,0 +1,3 @@
+echo change to 6801 code generation
+y copy libdef01.txt libdef.txt
+y copy libload1.txt libload.txt

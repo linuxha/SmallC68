@@ -1,0 +1,574 @@
+* libm R1.1b 16/11/85 - codegen macros
+*
+* Silicon Fen Software 6801 macro's for small-C compiler  July 1985
+*
+* Modify the following definitions to fit the target. Set one target only.
+* If the target is a Hitachi 6301 or 6303 then set H6301 to 1
+* If it is a Motorola 6801 or 6803 then set M6801 to 1.
+* If it is a Motorola 68HC11 then set M6811 to 1.
+H6301 set 0     select instruction set
+M6801 set 1
+M6811 set 0
+*
+ opt exp expand macros in listings
+*
+* declare code segment
+CSEG macro
+ if C6801
+ org CCODE      defined in libf01
+ endif
+ endm
+
+* declare literal segment
+LSEG macro      follows on from code seg
+ endm
+
+* declare data segment
+DSEG macro
+ if C6801
+ org CDATA      RAM from here
+ endif
+ endm
+
+* pseudo instructions
+puld macro
+ pula
+ pulb
+ endm
+*
+pshd macro
+ pshb
+ psha
+ endm
+*
+txd macro
+ if H6301|M6811
+  xgdx
+ else
+  pshx
+  puld
+  endif
+ endm
+*
+tdx macro
+ if H6301|M6811
+  xgdx
+ else
+  pshd
+  pulx
+  endif
+ endm
+*
+exdx macro
+ if H6301|M6811
+  xgdx
+ else
+  pshx
+  pshd
+  pulx
+  puld
+  endif
+ endm
+*
+* start a new function
+FUNC macro
+ if CRASMB
+M_ARGS set 0
+ else
+   ifc &0,main
+     if &1
+M_ARGS set 1
+     else
+M_ARGS set 0
+       endif
+     endif
+   endif
+ endm
+
+* get a byte from a global variable
+GETB macro
+ clra
+ ldab &1
+ bpl *+3
+ coma
+ endm
+
+* get a word from a global variable
+GETW macro
+ ldad &1
+ endm
+
+* get the address of a stack variable
+GETLOC macro
+ tsx
+ if &1>255
+   txd
+   addd #&1
+ else
+   if &1<>0
+     ldab #&1
+     abx
+     endif
+   txd
+   endif
+ endm
+
+* store a byte in a global
+PUTB macro
+ stab &1
+ endm
+
+* store a word in a global
+PUTW macro
+ stad &1
+ endm
+
+* store byte at address on stack and pull
+PUTSB macro
+ pulx
+ stab ,x
+ endm
+
+* store word at address on stack and pull
+PUTSW macro
+ pulx
+ stad ,x
+ endm
+
+* get byte from address in reg
+GETBI macro
+ tdx
+ clra
+ ldab ,x
+ bpl *+3
+ coma
+ endm
+
+* get word indirect
+GETWI macro
+ tdx
+ ldad ,x
+ endm
+
+* push reg
+PUSH macro
+ pshd
+ endm
+
+* swap TOS and reg
+SWAPS macro
+ pulx
+ pshd
+ pshx
+ puld
+ endm
+
+* swap 1st and 2nd reg
+SWAP macro
+ exdx
+ endm
+
+* get word from global pointer
+GWWI macro
+ ldx &1
+ ldad ,x
+ endm
+
+* get byte from global pointer
+GWBI macro
+ ldx &1
+ clra
+ ldab ,x
+ bpl *+3
+ coma
+ endm
+
+* get byte from stack, offset always positive
+GETBS macro
+ tsx
+ if &1<256
+   clra
+   ldab &1,x
+ else
+   txd
+   addd #&1
+   tdx
+   clra
+   ldab 0,x
+   endif
+ bpl *+3
+ coma
+ endm
+
+* put byte in stack
+PUTBS macro
+ tsx
+ if &1<256
+   stab &1,x
+ else
+   txd
+   addd #&1
+   tdx
+   stab 0,x
+   endif
+ endm
+
+* get word from stack
+GETWS macro
+ tsx
+ if &1<256
+   ldad &1,x
+ else
+   txd
+   addd #&1
+   tdx
+   ldad 0,x
+   endif
+ endm
+
+* put word in stack
+PUTWS macro
+ tsx
+ if &1<256
+   stad &1,x
+ else
+   txd
+   addd #&1
+   tdx
+   stad 0,x
+   endif
+ endm
+
+* get word from pointer on stack
+GETWSI macro
+ tsx
+ if &1<256
+   ldx &1,x
+   ldad 0,x
+ else
+   txd
+   addd #&1
+   tdx
+   ldx 0,x
+   ldad 0,x
+   endif
+ endm
+
+* get byte from pointer on stack
+GETBSI macro
+ tsx
+ if &1<256
+   clra
+   ldx &1,x
+   ldab 0,x
+ else
+   tdx
+   addd #&1
+   txd
+   clra
+   ldx 0,x
+   ldab 0,x
+   endif
+ bpl *+3
+ coma
+ endm
+
+* check the name of a called function
+CALCHK macro
+ ifc &1,&2
+   ldad #&3
+LIBP set 1
+   endif
+ endm
+
+* call subroutine
+CALL macro
+ CALCHK &1,printf,&2
+ jsr &1
+ endm
+
+* return
+RET macro
+ rts
+ endm
+
+* jump
+GOTO macro
+ jmp &1
+ endm
+
+* test and jump if zero
+TEST macro
+ subd #0
+ bne *+5
+ jmp &1
+ endm
+
+* quick test with result already in cc
+NTST macro
+ bne *+5
+ jmp &1
+ endm
+
+* immediate load
+IMMED macro
+ ldad #&1
+ endm
+
+* get global address
+GETGLB macro
+ ldad #&1
+ endm
+
+* call stack
+CALLS macro
+ ldad #&1       load arg bytecount
+ tsx
+ ldx &1,x
+ jsr 0,x
+ endm
+
+* pull to 2nd reg
+PULL macro
+ pulx
+ endm
+
+* increment stack
+INCS macro
+ if (&1)=0
+   exitm
+   endif
+ if ((&1)<15)
+   if (&1)>1
+     dup (&1)/2
+       pulx
+       endd
+     endif
+   if (&1)\&1     odd
+     ins
+     endif
+   exitm
+   endif
+ if ((&1)<256)
+   tsx
+   pshb
+   ldab #(&1)
+   abx
+   pulb
+   txs
+   exitm
+   endif
+ if ((&1)>(-32))
+   if -(&1)>1
+     dup -(&1)/2
+       pshx
+       endd
+     endif
+   if (&1)\&1     odd
+     des
+     endif
+   exitm
+   endif
+* otherwise
+ tsx
+ pshd
+ ldad #(&1)
+ pshx
+ tsx
+ addd ,x
+ stad ,x
+ pulx
+ puld
+ txs
+ endm
+
+* scale reg
+SCALE macro
+ if &1=2
+   asld
+ else
+   asra
+   rorb
+   endif
+ endm
+
+* add to stack
+ADDS macro
+ tsx
+ addd ,x
+ pulx
+ endm
+
+* sub from stack
+SUBS macro
+ pshd
+ tsx
+ ldad 2,x
+ subd ,x
+ pulx
+ pulx
+ endm
+
+* mult values on stack
+MULS macro
+CC_MUL SET 1
+ pshd
+ jsr CCMUL
+ pulx
+ pulx
+ endm
+
+* divide 2,s by ,s
+DIVS macro
+* 6811 divide could be used here
+CC_DIV SET 1
+ pshd
+ jsr CCDIV
+ pulx
+ pulx
+ endm
+
+* modulus (remainder) of 2,s divided by ,s
+MODS macro
+CC_DIV SET 1
+ pshd
+ jsr CCDIV
+ txd
+ pulx
+ pulx
+ endm
+
+* or with stack
+ORS macro
+ tsx
+ oraa 0,x
+ orab 1,x
+ pulx
+ endm
+
+* exclusive or with stack
+EORS macro
+ tsx
+ eora 0,x
+ eorb 1,x
+ pulx
+ endm
+
+* and with stack
+ANDS macro
+ tsx
+ anda 0,x
+ andb 1,x
+ pulx
+ endm
+
+* shift right 2,s by ,s
+ASRS macro
+CC_ASR SET 1
+ pshd
+ jsr CCASR
+ pulx
+ pulx
+ endm
+
+* shift left 2,s by ,s
+ASLS macro
+CC_ASL SET 1
+ pshd
+ jsr CCASL
+ pulx
+ pulx
+ endm
+
+* increment reg
+INCD macro
+ addd #&1
+ endm
+
+* decrement reg
+DECD macro
+ subd #&1
+ endm
+
+* complement reg
+COMD macro
+ coma
+ comb
+ endm
+
+* negate reg
+NEGD macro
+ COMD
+ INCD 1
+ endm
+
+* test ,s against reg and set reg to 1 if true or 0 if false
+* problem with non commutative operators is that comparison is inverted
+* cc z flag is set properly
+CCTST macro
+ tsx
+ subd 0,x
+ &1 *+6
+ clrb
+ clra
+ bra *+5
+ clra
+ ldab #1
+ pulx
+ endm
+
+CCEQ macro
+ CCTST beq
+ endm
+
+CCNE macro
+ CCTST bne
+ endm
+
+CCLT macro
+ CCTST bgt
+ endm
+
+CCGT macro
+ CCTST blt
+ endm
+
+CCLE macro
+ CCTST bge
+ endm
+
+CCGE macro
+ CCTST ble
+ endm
+
+CCULT macro
+ CCTST bhi
+ endm
+
+CCULE macro
+ CCTST bcc    bcc=bhs
+ endm
+
+CCUGT macro
+ CCTST bcs    bcs=blo
+ endm
+
+CCUGE macro
+ CCTST bls
+ endm
+
+* external function reference
+EXTF macro
+&2 SET 1
+ endm
+
+* external variable reference
+EXTV macro
+ endm
+
+* public reference
+PUB macro
+ endm
+
+* end of libm01
+

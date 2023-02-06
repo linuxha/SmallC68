@@ -1,0 +1,259 @@
+,pn 79
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Error Messages and Debugging
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+`$1B,'!,24`
+,ce 2
+10. Error Messages and Debugging
+
+`$1B,'!,8`
+,pp
+This section lists the error messages that are produced by the compiler with descriptions of the causes of the errors. It also gives hints and tips on the sort of problems that occur as runtime errors in C programs.
+
+
+10.1  Error Messages
+,pp
+The compiler generates two types of error message. The first type is not related to the text of the program and is the result of command line errors or disk full errors. The second type is the result of a problem with the program text. This type of error has a standard error message format. The error is both written to the output macro file as a comment and to the screen. The format starts by outputting the line of program that caused the error. Underneath this line an up arrow marker shows the position of the error in the line. The third line consists of the name of the current input file and the line number within the file followed by the text error message.
+,pp
+The compiler suffers from cascading errors to some extent. When an error is found the compiler can get out of step with the program and may generate a whole series of errors indicating problems with what may be perfectly good code. This problem is alleviated to some extent by the FLEX screen paging facility. If the TTYSET parameters are set with depth at 24 and pause enabled (TTYSET DP=24 PS=Y) then the compiler will stop when the screen is full of errors. The very first error should be noted most carefully as some subsequent errors may cascade from it. The compiler can be stopped with no ill effects when the screen is full by typing return. To continue with the compilation type escape. In this sense the compiler behaves in the same way as the FLEX assembler.
+
+
+Errors:
+
+"No options given after '-' on command line"
+,pp
+This command line error causes the program to halt and return to FLEX because a misinterpreted command line may overwrite one of the input files. The problem is that the options for the compiler are introduced with a '-' in the Unix tradition and a '-' has been found that does not have any options specified after it. See section 3 on compiler operation for the available options.
+
+
+"output file not specified after -o"
+,pp
+The -o option introduces an output filename. If no filename is given then this error occurs.
+
+
+"can't open file"
+,pp
+If a file is specified interactively and it cannot be opened then its name is output along with this message. See section 3.
+
+
+"can't nest include files"
+,pp
+Unlike standard C compilers the small-C compiler cannot nest its include files. See section 4.14.2.
+
+
+"bad include file specification"
+,pp
+A filename was not specified after #include, see section 4.14.2.
+
+
+"can't open include file"
+,pp
+The include file could not be opened as specified. See section 4.14.2.
+
+
+"missing closing brackets"
+,pp
+This message may occur right at the end of compiling a program. It means that a compound statement was not terminated somewhere in the program. Every compound statement is bracketed by { and } and the compiler has found a { that does not have a matching }. See section 4.11.2.
+
+
+"it must be a constant"
+"negative size illegal"
+,pp
+These errors occur in a program when an array is declared. The size of an array must be a simple constant and it cannot be negative. See section 4.10.
+
+
+"illegal function or declaration"
+,pp
+An attempt has been made to declare a function with an illegal name. Symbol names must have an alphabetic first character (or _). This error may occur if a function has too many closing braces in it ( } ) as the compiler will think that the function has finished and will be looking for a new function declaration. This usually causes a cascade of errors. See section 4.12 for function definitions.
+
+
+"missing open parenthesis"
+,pp
+In a function definition the initial identifier must be followed by a list of parameters in brackets. Even if there are no parameters the brackets must still be present (unlike Pascal). e.g.
+        funct()
+                {
+                body of function;
+                }
+
+This error message is complaining that when trying to define a function there was no open bracket after the initial identifier. See section 4.12.
+
+
+"illegal argument name"
+,pp
+After the open bracket of a function definition there must be either a closing bracket or a list of identifiers followed by a closing bracket. This error is complaining that an illegal identifier was found in the argument list. See section 4.12.
+
+
+"expected comma"
+,pp
+The argument list described above uses comma's as separators. This error occurs if a comma was not found between two arguments. See section 4.12. The same error message is generated if a comma is not used to separate identifiers in a type declaration. See section 4.10.
+
+
+"wrong number of args"
+,pp
+This error occurs during specification of the argument types for a function. Each argument type specification should start with either "char" or "int". This error may occur if something else is found before all the parameters have been declared or if the number of arguments does not match the number of declarations. The declarations must be in the same order as the arguments specified for small-C. See section 4.12.
+
+
+"missing semicolon"
+,pp
+This error occurs whenever the C syntax requires a semicolon. This is at the end of a statement or declaration list. See sections 4.10 and 4.11.
+
+
+"illegal symbol name"
+,pp
+Symbol names must start with either an underline _ or an alphabetic character not a numeric or punctuation character. This includes preprocessor symbols as well as C identifiers.
+See sections 4.2 and 4.14.
+
+
+"already defined"
+,pp
+If a symbol has previously been defined with the same name (or the same up to 8 characters) then this multiply defined error occurs. See section 4.2.
+
+
+"missing bracket"
+,pp
+This error indicates that the C syntax requires a bracket at this point. The type of bracket required is indicated after the error message but only in the output macro file unfortunately.
+
+
+"must be lvalue"
+,pp
+The C syntax requires an lvalue at the indicated point. This error occurs if an attempt is made to assign a value to a constant value or constant address (array or function identifier). See sections 4.7 and 4.9.1.
+
+
+"global symbol table overflow"
+,pp
+There is room in the symbol table for 300 global symbols. These include function names as well as global variable names. If more than 300 are used then this message is produced. A customised version of the compiler with bigger or smaller symbol tables can be provided by Silicon Fen Software on request.
+
+
+"local symbol table overflow"
+,pp
+The local symbol table contains space for up to 60 local variable declarations. The above comments apply.
+
+
+"too many active whiles"
+,pp
+There is a limit to the degree of nesting available for while do or for loops of 25 nested loops in a single function. Anyone who reaches this limit is recommended to read a book on programming style.
+
+
+"no active whiles"
+,pp
+If this error occurs then a break or continue statement has been used when no while loops are present. Break and continue are only valid inside while loops. See sections 4.11.8 and 4.11.9.
+
+"missing quote"
+,pp
+A string was found which had a starting quote " but did not terminate. These strings must be defined on a single line. See section 4.5.
+
+
+
+"missing apostrophe"
+,pp
+A character constant was found which had a starting apostrophe ' but did not terminate. More than one character can be present in a character constant but it must be defined on a single line. The character constant for an apostrophe is the integer constant 39 (ascii value) as the backslash escape sequences are not implemented. See section 4.4.3.
+
+
+"preprocessed line too long"
+,pp
+When the preprocessor performs parameter substitution (on a line by line basis) the processed line may be longer than the original line. This error indicates that the preprocessed line ended up more than 132 characters long. This is a rare occurrence because all the whitespace in an input line is compressed to single spaces. The fix is to split the original line in the program or redefine the substituted tokens to be shorter. See section 4.14.1.
+
+
+"macro table full"
+,pp
+The macro table can contain up to 1000 characters (including null terminators) of the original tokens and their substitutions. When the table is full this error occurs. The comments on the symbol table sizes apply.
+
+
+"Output file error"
+,pp
+This is not a program error. It occurs when an attempt to write to the output file fails. This may be due to the disk being full or to a bad disk sector.
+
+
+"illegal address"
+,pp
+If an attempt is made using the unary & operator to take the address of a constant or an expression then this error occurs. It is only possible to take the address of variables and functions. See section 4.9.2.
+
+
+"invalid expression"
+,pp
+The compiler has encountered an invalid primary expression. See section 4.9.1.
+
+
+"string space exhausted"
+,pp
+All the string constants in a program are stored in memory by the compiler until the end of the program is reached. They are then output as a block after the code segment. This error indicates that there is not enough space for the compiler to store all the strings inside itself. There is 3000 bytes available for string storage but this can be changed in the same way as the symbol tables. See sections 4.5 and 9.
+
+
+10.2  Debugging
+,pp
+Debugging a small-C program is much easier than debugging an assembly language program. The registers and the stack are automatically taken care of and the structure of a C program is much easier to see from the source code than the structure of an assembler program.
+,pp
+Most errors can be found by following the logic of a program by hand. Some simple checks to make that cover most common C errors are listed below.
+
+1. Check that variables are initialised correctly before they are used. All global variables are guaranteed to be set to zero before the program starts but all local variables will contain garbage each time the function is entered because they are simply allocated on the stack by moving the stack pointer.
+
+2. Check every instance of the = operator to see if it should really be ==. (Remember that = is always assignment even if it is used in an if or while test. == is always a test which produces zero or one as a result.) See sections 4.9.6 and 4.9.8.
+
+3. Check that the values passed to each function are of the same type and in the same order that the function is defined to expect. Check the returned value also. It is ok to ignore a returned value if it is not required but if the returned value of a function is used there must be a "return expression;" statement at every exit point for the function.
+
+4. Check the level of indirection for any pointer operations. If v is a variable then &v is the address of the variable, if p is a pointer then *p is the value being pointed to. If p==0 then p is a null pointer and does not point to anything. It is often a good idea for functions that have pointers passed to them as parameters to check whether they have been passed a null pointer before performing a *p.
+
+5. There are some problems caused by the simple approach of the small-C compiler. The first problem is that if a character is passed to a function then it is sign extended to integer before being passed. This is standard C but inside the function, if an argument has been defined as character, the value of the argument is always accessed as an integer. This means that values outside the character range can be stored in the character. (Local character variables however are only allocated a single byte on the stack and cannot have values outside the character range.)
+The second problem is that the compound type used to pass the argument values to main is not always handled correctly. The declaration "char *argv[];" declares an array of pointers to characters. This type of declaration will only be accepted by the compiler as a function argument declaration and it is actually simulated by an array of integers. This is ok if the arguments are used as pointers to be passed on to other functions i.e. argv[1] is an integer that contains the address of a string. The problem arises if an attempt is made to get at the individual characters of the string directly. "*argv[1]" should get the first character of the string but actually gets an integer containing the first and second characters of the string. The example program GREP.C shows the way round this problem using an intermediate variable.
+
+6. Check that passing variables to functions by reference is performed properly. All variables are passed by value in C so that if a variable v is passed to a function the function gets a copy of the current value of v. This copy can be changed within the function just like an initialised local variable but the original variable v is not affected. If it is required to change the value of v within the function then the address of v must be passed explicitly by passing &v. i.e. funct(v) gets the value of v, funct(&v) gets the address of v and can read and set v. The argument within funct should be defined as a pointer to the type of v so if v is integer funct will be defined as "funct(pv) int *pv;". To access v within funct *pv is used. This is exactly the same as a VAR parameter in Pascal except that in Pascal the Pascal compiler automatically passes the address of a VAR variable and dereferences the address within a procedure.
+
+7. Check that array indexes are used properly. Arrays in C are declared with the number of elements they will hold. i.e. "char buf[80];" is an array with 80 bytes of storage allocated to it. The elements of the array however are accessed as buf[0] to buf[79]. If buf[80] is used in an expression then it refers to the variable that was declared after buf! There is no checking of array bounds in C and this sort of problem often results in corruption of variables that dont appear to be being accessed. If buf was holding a string then the characters of the string could go from buf[0] to buf[78] with the null terminator at buf[79].
+If the buffer is the only local variable in a function then the location after the end of the buffer is the return address for the function. Overwriting this address is obviously fatal and will probably need a reset or a reboot to recover from the resulting crash.
+
+8. Check that string operations preserve the null terminator. If a buffer of characters with no null terminator is passed to a string handling function then the function will not stop until it has passed off the end of the string and has found a zero byte somewhere in memory. This may cause corruption of the data segment for global buffers or corruption of the stack for local buffers.
+
+9. Check that there are no global variables called "s", "u", "x", or "y". The FLEX assembler gets confused by labels with these names and assembles "ldd s" as "ldd ,s". This converts global variable references to stack operations with nasty results. Local variables with these names are perfectly ok.
+,pp
+When all else fails it is necessary to run the program and trace its progress. One of the best ways is to add "debug lines" to the program which send information to the screen on the current function being executed or the current value of a variable. e.g.
+
+funct(v)
+        int v;
+        {
+        puts("funct entered");
+        /* body of funct */
+        printf("%d returned by funct\n",v);
+        return v;
+        }
+
+When this runs it might produce:
+
+funct entered
+451 returned by funct
+
+,pp
+When a section of the program works its debug lines can be commented out or deleted so that the screen does not get too cluttered. The TTYSET pause facility prevents output from shooting off the top of the screen so that progress can be monitored and the program can be aborted easily.
+,pp
+If a single step debugger or a breakpoint monitor is available then the program can be debugged as if it was an assembly language program. The section on assembly language interfacing gives information on the conventions followed by the small-C compiler. If the macro file LIBM09.TXT is studied and a listing of the output macro's with the C source interleaved (-i option) is available then it is easy to follow the path of a program. The function entry points and global variable addresses are output by the assembler in its symbol table and this can be redirected to a printer using the FLEX P.CMD program.
+
++++p asmb file.om file.cmd +l
+
+The +l prevents a full assembler listing but allows a symbol table listing. The assembler listing by default only shows the macro calling lines. To make the assembler expand the macro's into machine instructions OPT EXP should be added to the start of LIBDEF.TXT.
+,pp
+If the symbol table is output to a disk file instead of the printer then the example program grep.c can be used to pull out a symbol's address. e.g.
+
+        +++grep symbol symtab.txt
+        symbol  43F6  etc.
+

@@ -1,0 +1,477 @@
+/* cc8.c9 R1.1 3/7/85  */
+
+outsnl(s)
+       char    *s;
+       {
+       outstr(s);
+       nl();
+       }
+
+/*begin a comment line for the assembler*/
+comment()
+        {
+        outbyte('*');
+        outbyte(' ');
+        }
+
+outup(s)
+    char *s;
+    {
+    while(*s)
+        outbyte(toupper(*s++));
+    }
+
+/*print all assembler info before any code is generated*/
+header()
+        {
+        if (glbflag)
+                {
+                comment();
+                outsnl(version);
+                outstr(" lib libdef\n");
+                }
+        else
+                {
+                outstr("/* small-C precompiled module */\n");
+                outstr("#asm\n");
+                comment();
+                outsnl(version);
+                }
+        }
+
+/*print any assembler stuff needed after all code*/
+trailer()
+        {
+        if (glbflag)
+                {
+                outstr("end\n");     /* end of uninitialised data segment */
+                outstr(" end START\n"); /* xfer address is START */
+                }
+        else
+                outstr("#endasm\n");
+        }
+
+/*fetch a static memory cell into the primary register*/
+getmem(sym)
+       char *sym;
+       {
+       if ( ( sym[IDENT] != POINTER ) & ( sym[TYPE] == CCHAR ) )
+               {
+               outstr(" GETB ");
+               outsnl(sym + NAME);
+               }
+       else
+               {
+               outstr(" GETW ");
+               outsnl(sym + NAME);
+               }
+       }
+
+/*fetch the address of the specified local into the primary register*/
+getloc(sym)
+       char *sym;
+       {
+       int *temp;
+       outstr(" GETLOC ");
+       temp = sym + OFFSET;
+       outdec( *temp - sp );
+       nl();
+       }
+
+/* fetch address of a global into the primary register */
+getglb()
+        {
+        outstr(" GETGLB ");
+        }
+
+/*store the primary register into the specified static memory cell*/
+putmem(sym)
+       char *sym;
+       {
+       if ( ( sym[IDENT] != POINTER ) & ( sym[TYPE] == CCHAR ) )
+               outstr(" PUTB ");
+       else
+               outstr(" PUTW ");
+       outsnl(sym + NAME);
+       }
+
+/*store the specified object type in the primary register at the address*/
+/*on top of the stack*/
+putstk(typeobj)
+       char typeobj;
+       {
+       if ( typeobj == CCHAR )
+               outstr(" PUTSB\n");
+       else
+               outstr(" PUTSW\n");
+/* store value at the address pointed to by s then pull address off stack */
+       sp = sp + intwidth;
+       }
+
+/*fetch the specified object type indirect through the primary register*/
+/*into the primary register*/
+indirect(typeobj)
+       char typeobj;
+       {
+       if ( typeobj == CCHAR )
+               outstr(" GETBI\n");
+       else
+               outstr(" GETWI\n");
+       }
+
+/*swap primary and secondary registers*/
+swap()
+       {
+       outstr(" SWAP\n");
+       }
+
+/*print partial instruction to get partial value*/
+/*into primary register*/
+immed()
+       {
+       outstr(" IMMED ");
+       }
+
+/*push the primary register onto the stack*/
+push()
+       {
+       outstr(" PUSH\n");
+       sp = sp - intwidth;
+       }
+
+/*swap the primary register and the top of the stack*/
+swapstk()
+       {
+       outstr(" SWAPS\n");
+       }
+
+/*call the specified subroutine name*/
+call(sname,argcnt)
+       char *sname;
+       int  argcnt;
+       {
+       outstr(" CALL ");
+       outstr(sname);
+       outbyte(',');
+       outdec(argcnt);
+       nl();
+       }
+
+/*return from a subroutine*/
+ret()
+       {
+       outstr(" RET\n");
+       }
+
+/*call subroutine at address in stack*/
+callstk(argcnt)
+       int argcnt;
+       {
+       outstr(" CALLS ");
+       outdec(argcnt);
+       nl();
+       }
+
+/*jump to a specified internal label number*/
+jump(label)
+       int  label;
+       {
+       outstr(" GOTO ");
+       printlabel(label);
+       nl();
+       }
+
+/*test the primary register and jump if false to label*/
+testjump(label)
+       int  label;
+       {
+       outstr(" TEST ");
+       printlabel(label);
+       nl();
+       }
+
+codeseg()
+/* declare code segment */
+       {
+       outstr(" CSEG\n");
+       }
+
+litseg()
+/* declare literal segment */
+        {
+        if (glbflag)
+                {
+                outstr(" lib libload\n");  /* load runtime library code */
+                outstr("etext LSEG\n"); /* label end of text segment for C */
+                }
+        else
+                outstr(" LSEG\n");
+        }
+
+dataseg()
+/* declare data segment */
+        { /* label end of initialised data segment */
+        if (glbflag)
+                outstr("edata DSEG\n");
+        else
+                outstr(" DSEG\n");
+        }
+
+extfref(ptr)
+       char    *ptr;
+       {
+       outstr(" EXTF ");
+       outstr(ptr);
+       outbyte(',');
+       outup(ptr);
+       nl();
+       }
+
+extvref(ptr)
+        char *ptr;
+        {
+        outstr(" EXTV ");
+        outsnl(ptr);
+        }
+
+pubref(ptr)
+       char    *ptr;
+       {
+       outstr(" PUB ");
+       outsnl(ptr);
+       }
+
+/*print pseudo op to define a byte*/
+defbyte()
+       {
+       outstr(" fcb ");
+       }
+
+/*print pseudo-op to define storage*/
+defstorage(n)
+       int n;
+       {
+       outstr(" rmb ");
+       outdec( n );
+       nl();
+       }
+
+/*print pseudo-op to define a word*/
+defword()
+       {
+       outstr(" fdb ");
+       }
+
+/* increment stack pointer by n */
+incstack( n )
+       int n;
+       {
+       outstr(" INCS ");
+       outdec( n );
+       nl();
+       sp = sp + n;
+       }
+
+/*modify stack pointer to new value indicated*/
+modstk(newsp)
+       int  newsp;
+       {
+       int     k;
+       k = newsp - sp;
+       if ( k == 0 )
+               return newsp;
+       incstack( k );
+       return newsp;
+       }
+
+scale(width)
+        int width;
+        {
+        outstr(" SCALE ");
+        outdec(width);
+        nl();
+        }
+
+/* add the primary register to the stack and pull the stack ( results in*/
+/* primary)*/
+cadd()
+       {
+       outstr(" ADDS\n");
+       sp = sp + intwidth;
+       }
+
+/*subtract the primary register from the stack and pull the stack (results*/
+/*in primary)*/
+csub()
+       {
+       outstr(" SUBS\n");
+       sp = sp + intwidth;
+       }
+
+/*multiply the value on the stack by d and pull off( results in primary )*/
+mult()
+       {
+       outstr(" MULS\n");
+       sp = sp + intwidth;
+       }
+
+/*divide the value on the stack by the value in d 
+ ( quotient in primary,remainder in secondary ) */
+div()
+       {
+       outstr(" DIVS\n");
+       sp = sp + intwidth;
+       }
+
+/*compute the remainder ( mod ) of the value on the stack by the value in d
+ (remainder in primary,quotient in secondary*/
+mod()
+       {
+       outstr(" MODS\n");
+       sp = sp + intwidth;
+       }
+
+/*inclusive or the primary reg with the stack and pull the stack */
+/*( results in primary )*/
+or()
+       {
+       outstr(" ORS\n");
+       sp = sp + intwidth;
+       }
+
+/*exclusive or the primary reg with the stack and pull */
+/*(results in primary )*/
+xor()
+       {
+       outstr(" EORS\n");
+       sp = sp + intwidth;
+       }
+
+/*'and' the primary reg with the stack and pull( results in primary )*/
+and()
+       {
+       outstr(" ANDS\n");
+       sp = sp + intwidth;
+       }
+
+/*arithmetic shift right the value on the stack no of times in d
+(results in primary)*/
+casr()
+       {
+       outstr(" ASRS\n");
+       sp = sp + intwidth;
+       }
+
+/*arithmetic left shift the value on the stack number of times in d
+(results in primary)*/
+casl()
+       {
+       outstr(" ASLS\n");
+       sp = sp + intwidth;
+       }
+
+/*form two's complement of primary register*/
+cneg()
+       {
+       outstr(" NEGD\n");
+       }
+
+/*form one's complement of primary register*/
+ccom()
+       {
+       outstr(" COMD\n");
+       }
+
+/*increment the primary register by n */
+cinc( n )
+       int n;
+       {
+       outstr(" INCD ");
+       outdec( n );
+       nl();
+       }
+
+/*decrement the primary register by n */
+cdec( n )
+       int n;
+       {
+       outstr(" DECD ");
+       outdec( n );
+       nl();
+       }
+
+/*following are the conditional operators*/
+/*they compare the value on the stack against the primary and put a literal*/
+/*1 in the primary if the condition is true,otherwise they clear the primary*/
+/*register. They are pure macro's and pull the stack themselves */
+
+/*test for equal*/
+eq()
+       {
+       outstr(" CCEQ\n");
+       sp = sp + intwidth;
+       }
+
+/*test for not equal*/
+ne()
+       {
+       outstr(" CCNE\n");
+       sp = sp + intwidth;
+       }
+
+/*test for less than ( signed )*/
+lt()
+       {
+       outstr(" CCLT\n");
+       sp = sp + intwidth;
+       }
+
+/*test for less than or equal to (signed)*/
+le()
+       {
+       outstr(" CCLE\n");
+       sp = sp + intwidth;
+       }
+
+/*test for greater than ( signed )*/
+gt()
+       {
+       outstr(" CCGT\n");
+       sp = sp + intwidth;
+       }
+
+/*test for greater than or equal to ( signed )*/
+ge()
+       {
+       outstr(" CCGE\n");
+       sp = sp + intwidth;
+       }
+
+/*test for less than ( unsigned )*/
+ult()
+       {
+       outstr(" CCULT\n");
+       sp = sp + intwidth;
+       }
+
+/*test for less than or equal to ( unsigned )*/
+ule()
+       {
+       outstr(" CCULE\n");
+       sp = sp + intwidth;
+       }
+
+/*test for greater than ( unsigned)*/
+ugt()
+       {
+       outstr(" CCUGT\n");
+       sp = sp + intwidth;
+       }
+
+/*test for greater than or equal to ( unsigned )*/
+uge()
+       {
+       outstr(" CCUGE\n");
+       sp = sp + intwidth;
+       }
+/*                   <<<<    end of compiler >>>>                    */

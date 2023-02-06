@@ -1,0 +1,443 @@
+,pn 54
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+Runtime Library
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+,pg
+
+NAME
+        abs             return absolute value.
+        sign            return sign of value.
+
+SYNTAX
+        int abs(n)
+                int n;
+
+        int sign(n)
+                int n;
+
+DESCRIPTION
+,pp
+Abs returns n if n is positive and returns -n if n is negative.
+,pp
+Sign returns 1 if n is positive, 0 if n is zero or -1 if n is negative.
+
+COMPATIBILITY
+,pp
+Abs is completely compatible with Unix. Sign is compatible with other versions of small-C but is not present in Unix.
+
+,pg
+,ce 1
+File I/O Routines
+
+,pp
+In the Unix system all I/O is performed using files, even keyboard and screen I/O. When a C program starts up these files are already open and they have predefined file pointers called "stdin" for the standard input file (usually keyboard), "stdout" for the standard output (usually screen) and "stderr" for the standard error output (nearly always screen). Each of these I/O streams can be redirected on the Unix command line. For FLEX use these streams are simulated in a Unix compatible way, but I/O redirection is performed using the FLEX method (O.CMD, I.CMD, P.CMD). This allows redirection of stdin and stdout (I/O routines that do not mention stdin and stdout - like putchar and gets - are also redirected) but does not allow redirection of stderr, which will always go to the screen.
+,pp
+In Unix these I/O channels exist as special files that invoke device drivers. The keyboard and screen device driver for a single user Unix system is usually called /dev/console and this has been simulated for small-C under the name "console.dev". If fopen (see below) is called to open the file "console.dev" for input or output then it returns stdin or stdout without looking for a real file with that name. This feature is useful because programs that perform file I/O can be provided with "console.dev" on the command line or interactively and will redirect the file I/O to the screen or from the keyboard. For example, the compiler itself can be invoked to compile console.dev which lets the user try out various constructs and explore the error messages without having to keep editing a source file.
+,pp
+The file pointers used to refer to a file can be stdin, stdout, stderr (which in small-C don't point to anything as they are set up to have small integer values) or a value returned by fopen when a file is successfully opened. These values are actually the addresses of standard FLEX file control blocks which are dynamically allocated above the program in memory as a heap of 320 byte blocks. See section 9, The Image in Memory, for more details.
+,pp
+File pointers are often referred to as streams in Unix terminology. They are of the type "pointer to FILE" where FILE is defined in the standard I/O header file stdio.h. The small-C definition avoids the use of typedef (unimplemented) by #defining FILE to be char. Any use of file I/O will require the inclusion of stdio.h at the top of the program as stdin.. etc and EOF are also defined there.
+,pg
+
+
+NAME
+        fopen           open a file
+
+SYNTAX
+        #include "stdio.h"
+
+        FILE *fopen(name, type)
+                char *name, *type;
+
+DESCRIPTION
+,pp
+Fopen returns a pointer to a FLEX file control block if the file is opened successfully. It returns zero (a NULL pointer) if the file could not be opened. The FCB's are allocated dynamically as a heap in free memory just above the end of the program. This means that there is no fixed limit to the number of open files that are allowed, and that if a file is closed the FCB is automatically reused when another file is opened.
+,pp
+Looking at the parameters for fopen, "name" is a string containing the filename to open in any standard FLEX format. The extension will usually default to .TXT if it is not provided. The FLEX routines GETFIL and SETEXT are used by fopen but there is no Unix compatible way to specify a different default extension using fopen. There is, however, nothing to prevent a program from checking a provided filename and using strcat(name,extension) if one is not given. The second parameter "type" is also a string (NOT a character constant) which should be "w" if the file is to be opened for writing and "r" if the file is to be opened for reading. The types "w" and "r" are Unix compatible but some extensions are allowed to make fuller use of FLEX.
+,pp
+The third Unix type of "a" for appending to an existing file is not supported by FLEX but the alternative "u" for update is implemented. The above modes apply to FLEX text files with space compression enabled and to allow access to binary files (i.e. disabling space compression and expansion) a "b" can be added to any of the above types. When "b" is in use the extension will default to .BIN rather than .TXT.
+,pp
+WARNING, if a file is opened for write access then if that file already exists it will be DELETED before it is replaced by the new file. This is for compatibility with Unix and there are NO warnings such as FILE EXISTS etc. To check if a file exists try opening it for read first, if fopen returns zero then the file could not be found.
+,pp
+The special file name "console.dev" is recognised and maps onto the stdin and stdout streams. Opening console.dev (lower case only) for reading returns stdin, for writing it returns stdout. 
+,pg
+
+EXAMPLE
+
+/* a simple list program */
+
+#include "stdio.h"
+
+main(argc,argv)
+    int argc;
+    char *argv[];
+    {
+    FILE *infile;
+    char buf[132];
+    if (argc > 1)   /* a name was typed */
+        {
+        infile = fopen(argv[1],"r");    /* read */
+        if (infile)
+            {
+            while(fgets(buf,132,infile) )
+                {
+                fputs(buf,stdout);
+                }
+            }
+        }
+    }                
+
+COMPATIBILITY
+,pp
+Unix compatible for types "w" (write) and "r" (read)  but not for "u" (update), "wb" (write binary), "rb" (read binary), "ub" (update binary).
+,pg
+
+NAME
+        fclose                  close a file
+
+SYNTAX
+        #include "stdio.h"
+
+        fclose(stream)
+                FILE *stream;
+
+
+DESCRIPTION
+,pp
+When you have finished using a file, for read or write, then it can be closed. If the program terminates without closing files then FLEX closes the files automatically but it is good programming practice to explicitly close files. The parameter to fclose is the file pointer that was returned by fopen when the file was opened.
+,pp
+When the file has been closed its file control block is freed and can be reused by the next call to fopen.
+,pp
+If the predefined streams "stdin", "stdout", or "stderr" are passed to fclose then no action is taken.
+
+
+EXAMPLE
+
+        FILE *input;    /* define a file pointer */
+
+        input=fopen("fred.txt","r");  /*open file for use*/
+
+        /* read file as required */
+
+        fclose(input);  /* finished with file */
+
+
+COMPATIBILITY
+,pp
+Completely unix compatible except that unix really does close the predefined streams if they are passed to fclose.
+,pg
+
+NAME
+        feof, ferror, clearerr      check stream status
+
+SYNTAX
+        #include "stdio.h"
+
+        int feof(stream)
+                FILE *stream;
+
+        int ferror(stream)
+                FILE *stream;
+
+        clearerr(stream)
+                FILE *stream;
+
+
+DESCRIPTION
+,pp
+Feof returns non-zero when end of file is read on the named input stream. It returns zero otherwise.
+,pp
+Ferror returns non-zero if an error has occurred on the named stream. The error will remain until it is cleared by clearerr. Any flex error condition is noted including end of file on read and disk full on write.
+,pp
+Clearerr removes the error indication for the stream.
+
+
+COMPATIBILITY
+,pp
+These routines are fully unix compatible but do not work on the predefined streams stdin etc for FLEX. 
+
+,pg
+
+NAME
+        rewind          go back to the start of a file
+
+SYNTAX
+        #include "stdio.h"
+
+        rewind(stream)
+                FILE *stream;
+
+
+DESCRIPTION
+,pp
+If a file is being read and it is required to go back to the beginning  of the file to read it again then rewind should be used. A FLEX FMS error will occur if rewind is used on a write file although this would not be an error on unix. Ferror can be used to see if rewind worked.
+
+
+COMPATIBILITY
+,pp
+Unix compatible for files open for read.
+,pg
+
+NAME
+        frdchk          see if input is available
+
+SYNTAX
+        #include "stdio.h"
+
+        int frdchk(stream)
+                FILE *stream;
+
+DESCRIPTION
+,pp
+Frdchk checks to see if at least one character can be read immediately on the named stream or if the file is at EOF.
+,pp
+Frdchk(stdin) can be used to see if a character has been typed on the keyboard but has not been read. It returns 1 if the next call to getchar() or fgetc(stdin) will immediately provide a character. It returns 0 if there is nothing to read. Frdchk uses the FLEX STAT, terminal status routine.
+,pp
+If stream is a file open for read then frdchk will always return 1 until the end of the file has been reached.
+At end of file or if the file is an output file frdchk returns EOF (-1).
+
+COMPATIBILITY
+,pp
+Frdchk is only provided on Xenix systems, not on all Unix systems.
+,pg
+
+
+NAME
+        printf          formatted output routine
+
+SYNTAX
+        #include "stdio.h"
+
+        printf(format [, arg] ...)
+                char *format;
+
+
+DESCRIPTION
+,pp
+Printf places output on stdout, i.e. to the screen. It can accept any number of arguments of any type and converts, formats and prints the arguments in a way defined by the format string.
+,pp
+The format string contains ordinary characters which are printed as is, and conversion specifications which each cause the next argument to be converted and printed.
+,pp
+Each conversion specification is introduced by the character '%'. Following the '%' there may be:
+
+        -       an optional minus sign specifies that the       
+                converted value should be left adjusted in    
+                the indicated field.
+
+        digits  an optional digit string specifies the                          field width. The value will be padded with    
+                spaces if it has fewer characters than the    
+                field width.
+
+        0digits if the digits start with a 0 then the value 
+                is padded with zeros instead of spaces.
+
+        .       an optional period which separates the field 
+                width digits from the precision digits.
+
+        digits  on optional digit string which specifies the 
+                maximum number of characters to be printed 
+                from a string argument.
+
+        doxcs   a single conversion character, explained
+                below.
+
+The conversion characters allowed are:
+
+        d       an integer arg is printed as a signed
+                decimal
+
+        o       an integer arg is printed in octal.
+
+        x       an integer arg is printed in hexadecimal.
+
+        c       a character arg is printed.
+
+        s       a string arg is printed
+
+        %       a single % is printed.
+
+
+EXAMPLES
+
+        char *weekday, *month;
+        int  day, hour, min;
+
+        weekday = "Saturday";
+        month = "August";
+        day = 31;
+        hour = 8;
+        min = 6;
+
+        printf("\nThe date is %s, %s %d, %d:%02d",
+                weekday, month, day, hour, min);
+
+This produces "\nThe date is Saturday, August 31, 8:06" as output on the screen.
+
+
+        printf("%s3.3 %s3.3 %d %02d%02d hours",
+                weekday, month, day, hour, min);
+
+This produces "Sat Aug 31 0806 hours" as output.
+
+
+        printf("%c%c%c",month[0],month[1],month[2]);
+
+This produces "Aug" as output.
+
+
+        printf("%% %04x %%", 255);
+
+This produces "% 00FF %" as output.
+
+
+        printf("%-5d",100);
+
+This produces "100  " as output (left justified).
+
+WARNING
+,pp
+The number of arguments must match the number of conversion specifications, there are no error messages, just garbled output.
+,pp
+Printf is the most complicated library routine provided and if it is used then about 2k of code is generated. This is because it calls itob,btoi,strlen and abs, these in turn use the multiply and divide routines so a lot of library is called in when printf is used. Use "puts" and "putdec" to keep flex utilities small.
+
+
+COMPATIBILITY
+,pp
+This version of printf is a subset of the Unix printf and is upwards compatible. The missing features are to do with the printing of types that are not implemented in small-C (e.g. floating point types). The Unix printf is even more complicated and even bigger in use because all the floating point libraries are loaded if it is used.
+,pg
+
+NAME
+        getc,fgetc           read a character from a file
+
+SYNTAX
+        #include "stdio.h"
+
+        int getc(stream)
+                FILE *stream;
+
+        int fgetc(stream)
+                FILE *stream;
+
+DESCRIPTION
+,pp
+Getc and fgetc are identical but getc is defined in stdio.h as #define getc fgetc. They return the next character from the named input stream. If there is a read error or end of file is encountered then EOF is returned. EOF is an integer equal to -1 and so is not a valid byte sized character. The characters read by this routine are not sign extended to integer but are returned as integers.
+,pp
+If stdin is used as the stream then reading a control-D from the keyboard will cause an EOF to be returned.
+,pp
+This routine can be used to read binary data as 8 bit bytes from a file or to read ascii characters. There is no distinction in C or unix between binary and ascii files. For FLEX use the call to fopen determines whether space compression is active or not.
+
+EXAMPLE
+        /* read a line of characters */
+
+        char buf[BIGBUF];       /* buffer to hold input */
+        int i;
+
+        i = 0;
+        while((buf[i] = fgetc(stdin)) != EOF)
+                ++i;
+        buf[i] = 0;     /* cover EOF with a null */
+
+,pp
+In this example the input character is saved in the buffer and then it is checked to see if it is an end of file. Only the lower 8 bits of the integer returned by fgetc are stored in the buffer but all 16 bits are compared with EOF. When an EOF is read the while loop terminates and the bad character written into buf is overwritten with a null terminator.
+
+COMPATIBILITY
+,pp
+Both getc and fgetc are unix compatible but getc is implemented differently for unix.
+,pg
+
+NAME
+        putc,fputc              write a character to a file
+
+SYNTAX
+        #include "stdio.h"
+
+        int fputc(c,stream)
+                char c;
+                FILE *stream;
+
+        int putc(c,stream)
+                char c;
+                FILE *stream;
+
+DESCRIPTION
+,pp
+Write a character to a file, return the character (as an integer) or EOF if there is an error while writing to the file. putc is implemented using #define putc fputc as for getc.
+
+
+COMPATIBILITY
+,pp
+Unix compatible but putc is implemented differently for unix.
+
+,pg
+
+NAME
+        fgets           get a string from a file
+
+SYNTAX
+        #include "stdio.h"
+
+        char *fgets(s, n, stream)
+                char *s;
+                int  n;
+                FILE *stream;
+
+
+DESCRIPTION
+,pp
+Read at most n-1 characters from the stream into s. The read is terminated by a newline if this occurs before n-1 characters have been read. The last character put into s is followed by a null terminator. If the read was OK then s is returned, NULL (zero pointer) is returned on EOF or error.
+,pp
+If a newline was read then it will be present as the last character in s. This is unlike the routine gets where the newline is replaced by the null terminator.
+
+EXAMPLE
+        /* read a line */
+
+        char buf[BUFSIZE];      /* somewhere to put it */
+
+        fgets(buf,BUFSIZE,stdin);
+
+COMPATIBILITY
+,pp
+Completely unix compatible.
+,pg
+
+NAME
+        fputs           output a string to a file
+
+SYNTAX
+        #include "stdio.h"
+
+        fputs(s,stream)
+                char *s;
+                FILE *stream;
+
+
+DESCRIPTION
+,pp
+Fputs outputs all the characters in s up to but not including the null terminator to the named output stream. Unlike the routine puts a newline is not appended to the output.
+
+
+COMPATIBILITY
+,pp
+Completely unix compatible.
+

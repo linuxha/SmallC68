@@ -1,0 +1,3 @@
+echo change to 6809 code generation
+y copy libdef09.txt libdef.txt
+y copy libload9.txt libload.txt

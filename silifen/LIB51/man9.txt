@@ -1,0 +1,93 @@
+,pn 77
+,pl 66
+,lm 8
+,ll 64
+,ju
+,ppsi 4
+,ppsp 1
+,pc `
+,hd
+,ll 64
+`$1B,'!,24`
+,ce 2
+The Image in Memory
+
+`$1B,'!,8`
+,,
+,ft
+,ll 64
+`$1B,'!,24`
+,ce 3
+###
+
+Silicon Fen Software
+`$1B,'!,0`
+,,
+
+
+`$1B,'!,24`
+,ce 2
+9. The Image in Memory
+
+`$1B,'!,8`
+,pp
+A small-C program occupies memory as shown below. The program sections are shown in order but their sizes are not to scale.
+
+    FFFF-------------------------
+        |     Vectors           |
+        -------------------------
+        |     Monitor Rom       |
+        -------------------------
+        |     I/O Space         |
+        -------------------------
+        |                       |
+        |       FLEX            |
+        |                       |
+    C080-------------------------
+        |      FLEX stack       |
+    BFFF------------------------- <----- default MEMEND
+        |                       |
+        |       C Stack         |
+        |                       |
+        -------------------------
+        |                       |
+        |       Free RAM        |
+        |                       |
+        -------------------------
+        |                       |
+        |  File Control Blocks  |
+        |                       |
+        ------------------------- end
+        |                       |
+        |      Global Data      |
+        |                       |
+        ------------------------- edata
+        |                       |
+        |    String Literals    |
+        |                       |
+        ------------------------- etext
+        |                       |
+        |  Runtime Library Code |
+        |                       |
+        -------------------------
+        |                       |
+        |    C Program Code     |
+        |                       |
+    0000-------------------------
+
+,pp
+By default, small-C programs start at address 0000. This can be changed using  #asm, org XXXX, #endasm at the start of the program.
+,pp
+The stack starts at the address given in the FLEX MEMEND location and proceeds downwards. This is usually set to BFFF.
+,pp
+The code generated from the users C program starts at 0000. After this comes the machine library routines (multiply, divide, shift etc) followed by the program startup code at the transfer address. The startup code deals with the FLEX command line and then calls the function main in the users program. A few bytes of ram exist at this point to store the flex command line and the argc and argv values. If it is required to ROM a small-C program for use in a standalone system the startup routine will need to be replaced and the ram will not be required. Following the startup code comes the runtime library routines that were called by the program.
+,pp
+The label etext marks the end of the code segment. This label is available to assembler but the true external storage class is needed to use it from C (the label name and useage is unix compatible). 
+,pp
+The next segment is the initialised data segment. In small-C it consists only of the string literals used by the program. The end of this segment is marked by the label edata. (Available like etext).
+,pp
+The uninitialised data segment follows containing all global variables. Its end is marked by the end label and as part of the startup code the block of RAM from edata to end is filled with zero's. This is standard C compatable and means that all global variables are guaranteed to be zero at the start of program execution.
+,pp
+If any files are opened by the program they will be allocated file control blocks automatically just above the end label. These FCB's form a heap of 320 byte blocks and are reused if a file is closed and another is opened. The chain of open files maintained by FLEX is used to determine which FCB's are in use.
+,pp
+The gap between the FCB's and the stack is free RAM. Heavily recursive programs or programs which have a lot of local variables may cause the stack to overwrite the top FCB with possibly fatal results. This has never yet occurred in practice and it is possible to fit the TSC Debug program into the free RAM even when running the compiler itself. The compiler starts at 0000 and end for the compiler is somewhere between 8000 and 9000  depending on the exact version in use. The compiler is heavily recursive and exceedingly complicated expressions with lots of parentheses consume large quantities of stack.

@@ -1,0 +1,27 @@
+* libload R1.1 19/8/85  Load runtime library for FLEX9 6809 small-C compiler
+* copyright 1985 by Silicon Fen Software
+*
+        IF LIBP              printf library common to 6801 and 6809
+        lib     libp
+        ENDIF
+*
+        IF LIBC              default library
+        lib     libc09
+        ENDIF
+*
+        IF LIBS              stdio.h i/o library
+        lib     libs09
+        ENDIF
+*
+        IF LIBG              plot.h  graphics library
+        lib     libg09
+        ENDIF
+*
+        IF LIBH              hardware.h  hardware access library (unused)
+        lib     libh09
+        ENDIF
+*
+        IF LIBA              ctype.h  ascii tests and conversions library
+        lib     liba09
+        ENDIF
+* end of libload9
