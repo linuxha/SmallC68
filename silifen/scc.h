@@ -1,50 +1,55 @@
 #ifndef SCC_H
 #define SCC_H
-/************************************************/
-/*                                              */
-/*              small-c compiler                */
-/*                                              */
-/*                by Ron Cain                   */
-/*                                              */
-/************************************************/
+/*   now reserve some storage words  */
 
-#define BANNER  "** Ron Cain's Small-C V1.1.0 **"
+char  symtab[SYMTBSZ];          /*symbol table*/
+char  *glbptr;
+char  *locptr;                  /*pointers to next entry*/
+long  wq[WQTABSZ];              /*while queue*/
+long  *wqptr;                   /*pointer to next entry*/
+char  litq[LITABSZ];            /*literal pool*/
+long  litptr;                   /*pointer to next entry*/
+char  macq[MACQSIZE];           /*macro string buffer*/
+long  macptr;                   /*and its index*/
+char  line[LINESIZE];           /*parsing buffer*/
+char  mline[LINESIZE];          /*temp macro buffer*/
+long  iflevel;                  /* #if.. nest level */
+long  skiplevel;                /* level at which #if.. skipping started */
+long  lptr;
+long  mptr;                     /*pointers into each*/
 
-#define VERSION " FLEX Version 2.1, 13 Aug 1982\n* Linux Version 0.0.1, Jan31 2023\n* Motorola 68xx"
+/*   misc storage    */
 
-#define AUTHOR "       By S. Stepanoff & Neil Cherry"
+char  *version;                 /*pointer to version string */
+int   intwidth;                 /*integer width in bytes 2 or 4*/
+int   nxtlab;                   /*next available label*/
+int   litlab;                   /*label # assigned by literal pool*/
+int   sp;                       /*compiler relative stack pointer*/
+int   argstk;                   /*function arg sp*/
+int   ncmp;                     /*# open compound statements*/
+int   errcnt;                   /*# errors in compilation*/
+int   eof;                      /*set non zero on final input eof*/
+int   glbflag;                  /*non-zero if internal globals*/
+int   ctext;                    /*non-zero to intermix c-source*/
+int   cmode;
+/*non-zero while parsing  c-code zero when parsing assembly code*/
+int   lastst;                   /*last executed statement type*/
+char  quote[2];                 /*literal string for '"' */
+char  *cptr;                    /*work pointer to any char buffer*/
+long  *iptr;                    /*work pointer to any int buffer*/
+int   ch,nch;                   /*current and next characters as ints*/
+char  infnam[FNAMSIZ];          /*buffer for current filename*/
+char  incfnam[FNAMSIZ];         /*buffer for include filename*/
+int   infline;                  /*line number for input file*/
+int   incfline;                 /*line number for include file*/
+int   curr_arg;                 /*current place in argument list*/
+int   dump;                     /*dump statistics flag*/
 
-/*      Define system dependent parameters      */
+int   gargc;                    /*global copy of arg count*/
+char  **gargv;                  /*pointer to argument array*/
 
-extern struct _IO_FILE *stdout;
-extern struct _IO_FILE *stdin;
-extern struct _IO_FILE *stderr;
-
-/*      Stand-alone definitions                 */
-
-#ifndef NULL
-#define NULL	0
-#endif
-#ifdef __linux
-#define EOL 	'\n'            // \n = ^J 0x0A
-#else
-#define EOL 	13              // \r = ^M 0x0D
-#endif
-
-#define TAB	0x09
-#define CLS	0x0C            // ^L
-#define SQUOTE	0x27
-#define DQUOTE	0x22
-
-/*      UNIX definitions (if not stand-alone)   */
-
-#ifndef FDEBUG
-#warning FDEBUG not defined
-#define fdebugf(b,c) { }
-#else
-#warning FDEBUG IS defined
-#define fdebugf(b,c) fprintf(stderr, b, c)
-#endif
-
+FILE  *output;                  /*output fcb pointer*/
+FILE  *input;                   /*input file fcb pointer*/
+FILE  *input2;                  /*include file fcb pointer */
 #endif  /* SCC_H */
 
