@@ -1,5 +1,7 @@
 # SmallC68XX - Small C for the Motorola 68XX family under Linux 
 
+I am on a quest for a Small C compiler to support the various 6800/6803/6809/68000 boards I have. So with that in mind I am posting my notes and everything else I find on Small C. So for a while this will be quite a mess.
+
 Ron Cain's 1.1 Small C compiler for the 6800, 6801, 6803 and 6809. Maybe the 68HC11. The original Author of the Flex port is S. Stepanoff
 
 Originally these were Flex OS Compilers but I think I can make this work under Linux and the output code should be OS agnotic. My intention is to set them up to work on Linux as a cross-compiler.
@@ -12,6 +14,7 @@ There are currently 3 sets of source code for the Small C compiler. The 6800 ver
 6800/ ..... Early version of the Flex OS Small C compiler (very limitted, v1.1 1982)
 silifen/ .. Later version of the Flex OS Small C compiler (has for(), etc v2.1 1985)
 v22/ ...... MSDOS version of the Small C compiler (v2.2, outputs 8086 code)
+MicroC/ ... Dave Dunfield's Micro C (CUG422_* DOS Binaries)
 LICENSE ... Proposed License (I may need to change this)
 Makefile .. Ignore this, make files have moved their respective directories
 README.md . This file
@@ -53,6 +56,34 @@ smallc.c
 ```
 
 2023/02/04 - I've got the compiler hacked together and mostly working. What I've found is that the small c compiler outputs pseudo code and that the run9 (6809) and run1 (6801) code are the asm source to an interpreter. Assemble the code together and you have a program. This small C compiler is still quite limitted but may be useful and as one of the notes files points out C is easier to write than asm code. Anyway I'm posting this mess so I don't lose it and so other might get ideas. Just note that this is terrible C code. It was meant to use the very limmited small c compiler to compile itself. I'm in the process of making it work under Linux as a cross compiler for any of the Motorola preocessors. It will no longer compiler itself.
+
+# Useful links:
+
+http://www.pennelynn.com/Documents/CUJ/HTML/90HTML/199000DA.HTM A Survey Of CUG C Compilers by Victor Volkman
+https://archive.org/details/cug995 C Users' Group CDROM, September 1995 edition
+https://github.com/linuxha/asl ASL Macro assembler
+https://github.com/EtchedPixels/CC6303 A C compiler for the 6800/6803/6303 processors
+https://github.com/aladur/flexemu - 6809 Flex OS Emulator for Linux & Windows
+https://hackaday.io/project/189491-small-c-68xx - Hackaday project
+
+```
+                      Summary of CUG C Compilers
+
+                      Target      Implementation
+ CUG     Target      Operating    Based on Port   Date of Last  Overall
+Disk #    CPU         System          From          Revision    Rating
+------------------------------------------------------------------------
+
+ 104    Z-80/8080  CP/M 80 v2.2  RC Small C v1.1  06/28/1981    ***
+ 132    6809       0S-9          RC Small C v1.1  10/18/1983    **
+ 146    6800       FLEX v2.1     RC Small C v1.1  09/09/1982    **
+ 156    Z-80       CP/M          RC Small C v1.2  08/02/1984    ****
+ 163    8086       PC-DOS 1.1    JH Small C v2.0  01/14/1984    ***
+ 170    8086       PC-DOS 1.0    RC Small C v1.0  06/01/1982    *
+ 204    68000      Unix V        N/A              01/01/1986    ****
+ 221    6809       FLEX          RC Small C v1.0  11/15/1986    ***
+ 243    8086       PC-DOS 2.0    DECUS            12/01/1985    N/A
+```
 
 # License
 
