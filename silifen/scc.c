@@ -18,26 +18,30 @@ main(int argc,char **argv) {
     version = VERSION;              /*point at version string*/
     glbptr = STARTGLB;              /*clear global symbols*/
     locptr = STARTLOC;              /*clear local symbols*/
-    wqptr = wq;                     /*clear while queue*/
-    mptr = -1;                      /* flag not in preprocess */
+    wqptr  = wq;                    /*clear while queue*/
+    mptr   = -1;                    /* flag not in preprocess */
+
     macptr =                        /*clear macro pool*/
         litptr =                        /*clear literal pool*/
         sp =                            /*stack ptr (relative)*/
         errcnt =                        /*no errors*/
         eof =                           /*not eof yet*/
-        input =                         /*no input file*/
-        input2 =                        /*no include file*/
         ncmp =                          /*no open compound states*/
         ch = nch =                      /*no input chars*/
         dump =                          /* dont dump stats */
         lastst = 0;                     /*no last statement yet*/
+
     output = stdout;                /*default to stdout for ask()*/
+        input =                         /*no input file*/
+        input2 =                        /*no include file*/
+
     quote[1] = 0;                   /* ... all set to zero ...*/
     *quote = '"';                   /*fake a quote literal*/
     cmode = 1;                      /*enable pre-processing*/
     gargc = argc;                   /*set up global copies*/
     gargv = argv;
     curr_arg = 1;                   /*start after program name*/
+
     /*                   compiler body                                   */
     if (argc>1)
         cl_ask();                   /* get command line options */
@@ -227,49 +231,52 @@ declglb(typ)
 /*works just like "decglb" but modifies machine stack and adds symbol*/
 /*table entry with appropriate stack offset to find it again         */
 /*                                                                   */
-declloc(typ)
-     int  typ;
-{
+void
+declloc( int  typ ) {
     int     k;
     int     j;
     char    sname[NAMESIZE];
-    while(1)
-        {
-            while(1)
-                {
-                    if ( endst() )          /*do line*/
-                        return;
-                    if ( match ("*") )              /*pointer?*/
-                        j = POINTER;            /*yes*/
-                    else j = VARIABLE;              /*no*/
-                    if (symname(sname) == 0 )       /*name ok?*/
-                        illname();              /*no*/
-                    if ( findloc(sname) )           /*already there*/
-                        multidef(sname);
-                    if ( match ("[") )              /*array*/
-                        {
-                            k = needsub();             /*get size*/
-                            if ( k )
-                                {
-                                    j = ARRAY;      /*10 = array*/
-                                    if ( typ == CINT )
-                                        k = k * intwidth;
-                                }
-                            else
-                                {
-                                    j = POINTER;    /*0 = pointer*/
-                                    k = intwidth;
-                                }
-                        }
-                    else if (( typ == CCHAR) & ( j != POINTER ))
-                        k = 1;
-                    else k = intwidth;
-                    /*change machine stack*/
-                    sp = modstk(sp - k );
-                    addloc (sname , j , typ , sp );
-                    break;
-                }
-            if (match (",") == 0 )
+
+    while(1) {
+        while(1) {
+            if ( endst() )                       /* do line */
                 return;
+
+            if ( match ("*") )                   /* pointer? */
+                j = POINTER;                     /* yes */
+            else
+                j = VARIABLE;                    /* no */
+
+            if (symname(sname) == 0 )            /* name ok? */
+                illname();                       /* no */
+
+            if ( findloc(sname) )                /* already there */
+                multidef(sname);
+
+            if ( match ("[") ) {                 /* array */
+                k = needsub();                   /* get size */
+
+                if ( k ) {
+                    j = ARRAY;                   /* 10 = array */
+                    if ( typ == CINT )
+                        k = k * intwidth;
+                } else {
+                    j = POINTER;                 /* 0 = pointer */
+                    k = intwidth;
+                }
+            } else if (( typ == CCHAR) & ( j != POINTER )) {
+                k = 1;
+            } else {
+                k = intwidth;
+            }
+
+            /*change machine stack*/
+            sp = modstk(sp - k );
+            addloc (sname , j , typ , sp );
+            break;
         }
+
+        if (match (",") == 0 )
+            return;
+    }
 }

@@ -12,6 +12,7 @@
 /*invoked when declared variable is followed by a "[". This routine  */
 /*makes subscript the absolute size of the array                     */
 /*                                                                   */
+int
 needsub() {
     int     num;
     if ( match("]") )                           /*null size*/
@@ -34,17 +35,18 @@ needsub() {
 /*                                                                   */
 /*called from "parse" routine tries to make a function out of what   */
 /*follows                                                            */
-newfunc()
-{
+void
+newfunc() {
     char    n[NAMESIZE];
     char    *ptr;
     int     *temp;
-    if ( symname(n) == 0 )
-        {
+
+    if ( symname(n) == 0 ) {
             error("illegal function or declaration");
             kill();                         /*invalidate line*/
             return;
-        }
+    }
+
     if ( ptr = findglb(n) )                /*already in symbol table?*/
         {
             temp = ptr + OFFSET;
@@ -118,13 +120,12 @@ newfunc()
 
 /*called from "newfunc". This routine adds an entry in the local*/
 /*symbol table for each named argument                          */
-getarg(t)      /*t = CCHAR or CINT*/
-     int  t;
-{
+void
+getarg(int t) {    /*t = CCHAR or CINT*/
     char    n[NAMESIZE];
     int     j,type;
-    while (1)
-        {
+
+    while (1) {
             type = t;       /* start with basic type for each arg */
             /* else char c, *s; makes int *s; */
             if ( argstk == 0 )
@@ -160,8 +161,8 @@ getarg(t)      /*t = CCHAR or CINT*/
 /*called whenever syntax requires a statement.This routine performs */
 /*that statement and returns a number telling which one             */
 /*some attempt has been made to look for common statements first    */
-statement()
-{
+int
+statement() {
     if ( (ch == 0 ) & ( eof ) )
         return( 0 );
     else if ( amatch("char",4) )
@@ -232,16 +233,16 @@ statement()
 }
 
 /*called whenever syntax requires a semicolon*/
-ns()
-{
+void
+ns() {
     if ( match(";") == 0 )
         error("missing semicolon");
 }
 
 /* { statement; statement; ...... } */
 /*allow any number of statements to fall between {}  */
-compound()
-{
+void
+compound() {
     ++ncmp;                                 /*new level open*/
     while ( match("}") == 0 )
         if (eof)
@@ -251,8 +252,8 @@ compound()
 }
 
 /*   if (expr) statement; else statement; */
-doif()
-{
+void
+doif() {
     int    flev;
     int     fsp;
     int     flab1;
@@ -283,8 +284,8 @@ doif()
 }
 
 /*  while(expr) statement; */
-dowhile()
-{
+void
+dowhile() {
     int     wq[4];                      /*allocate local queue*/
     wq[WQSYM] = locptr;                 /*record local level*/
     wq[WQSP] = sp;                      /*and stack pointer*/
@@ -305,8 +306,8 @@ dowhile()
 }
 
 /*  for(expr1;expr2;expr3) statement; */
-dofor()
-{
+void
+dofor() {
     int     wq[4];                      /*allocate local queue*/
     int     forlab1,forlab2;            /* expr3 labels */
     wq[WQSYM] = locptr;                 /*record local level*/
@@ -350,8 +351,8 @@ dofor()
 }
 
 /* do statement while(expr); */
-dodo()
-{
+void
+dodo() {
     int wq[4],top;
     wq[WQSYM] = locptr;
     wq[WQSP] = sp;
@@ -372,8 +373,8 @@ dodo()
 
 
 /*  return expr; */
-doreturn()
-{
+void
+doreturn() {
     int rsp;
     /* if not end of statement , get an expression*/
     if ( endst() == 0 )
@@ -385,8 +386,8 @@ doreturn()
 }
 
 /*  break; */
-dobreak()
-{
+void
+dobreak() {
     int     *ptr,rsp;
     /*see if any whiles open*/
     if ( ( ptr = readwhile() ) == 0 )
@@ -398,8 +399,8 @@ dobreak()
 }
 
 /* continue; */
-docont()
-{
+void
+docont() {
     int *ptr,rsp;
     /*see if any whiles open*/
     if ( ( ptr = readwhile() ) == 0 )
@@ -413,6 +414,7 @@ docont()
 /*  #asm ..... #endasm */
 /*enters mode where assembly language statements are passed intact*/
 /*through the parser*/
+void
 doasm() {
     cmode = 0;                              /*mark mode as "asm"*/
     while(1)

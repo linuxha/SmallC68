@@ -13,16 +13,21 @@
 /* lval[1] - type of indirect obj to fetch - 0 for static */
 /* this file contains assignment, logical operators and comparisons */
 
-expression()
-{
+// For 64 bit Linux char * == 8 bytes long
+// For 64 bit Linux int    == 8 bytes long
+void
+expression() {
     long    lval[2];
+
     if ( heir1(lval) )
         rvalue(lval);
 }
 
+long
 heir1(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
+
     k = heir2(lval);
     if ( match("=") )          /* need an lvalue to put result in */
         {
@@ -41,8 +46,9 @@ heir1(long *lval) {
     else return k;
 }
 
+long
 heir2(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
 
     k = heir3(lval);
@@ -65,8 +71,9 @@ heir2(long *lval) {
         }
 }
 
+long
 heir3(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
 
     k = heir4(lval);
@@ -90,8 +97,9 @@ heir3(long *lval) {
         }
 }
 
+long
 heir4(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
 
     k = heir5(lval);
@@ -115,8 +123,9 @@ heir4(long *lval) {
         }
 }
 
+long
 heir5(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
 
     k = heir6(lval);
@@ -146,8 +155,9 @@ heir5(long *lval) {
         }
 }
 
+long
 heir6(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
 
     k = heir7(lval);
@@ -249,8 +259,9 @@ heir6(long *lval) {
 }
 /*  cc6.c9 R1.1 24/4/85  */
 
+long
 heir7(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
 
     k = heir8(lval);
@@ -281,8 +292,9 @@ heir7(long *lval) {
         }
 }
 
+long
 heir8(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
 
     k = heir9(lval);
@@ -318,8 +330,9 @@ heir8(long *lval) {
         }
 }
 
+long
 heir9(long *lval) {
-    int     k;
+    long    k;
     long    lval2[2];
 
     k = heir10(lval);
@@ -356,8 +369,9 @@ heir9(long *lval) {
         }
 }
 
+long
 heir10(long *lval) {
-    int     k;
+    long    k;
     char    *ptr;
 
     if (match("++") ) {
@@ -492,8 +506,9 @@ heir10(long *lval) {
 }
 /*  cc7.c9 R1.1 24/4/85  */
 
+long
 heir11(long *lval) {
-    int     k;
+    long    k;
     char    *ptr;
 
     k = primary(lval);

@@ -2,6 +2,8 @@
 
 I'm busy reading the Small-C Handbook by James E. Hendrix and from what I can tell this version by "Silicon Fen Software: Small-C Compiler R1.1.0 4/7/85". Despite the r1.1 it support the the for loop which is part of James E. Hendrix v2.1. At the moment I'm having to fix the char */int usage because 64 bit linux char pointers occupy the same size as a lone (8 bytes) and the same size as int (4 bytes). For those not familiar with the various CPUs, porting C and address size. The 8 bit machines typically had 16bit char pointers and ints. But as we moved to 16/32/64 bit machines the size of the char * matched the machine address width. Hense 64 bits wide on 64 bits Linux/Windows. This is also what we now have stdint.h and the unit8_t, uint16_t, ... etc. This helps avoid some of the confusing.
 
+Nee to a copy of the Microbox II (from Micro Concepts in Chelteham UK)
+
 # Description
 
 Note that the LIB5X directories appear to be the original Flex disks for this compiler.

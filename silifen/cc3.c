@@ -11,10 +11,10 @@
 /*called from "heir11",this routine will either call the named         */
 /*function ,or if the supplied pointer is zero,will call the contents  */
 /*of hl                                                                */
-callfunction(ptr)
-     char *ptr;                           /*symbol table entry (or 0)*/
-{
+void
+callfunction(char *ptr) {             /*symbol table entry (or 0)*/
     int     nargs;
+
     nargs = 0;
     blanks();                       /*already saw open parens*/
     if ( ptr == 0 )
@@ -40,8 +40,8 @@ callfunction(ptr)
     sp = modstk(sp + nargs);        /*clean up arguments*/
 }
 
-junk()
-{
+void
+junk() {
     if ( an(inbyte() ) )
         while ( an(ch) )
             gch();
@@ -55,43 +55,39 @@ junk()
     blanks();
 }
 
-endst()
-{
+int
+endst() {
     blanks();
     return ((streq(line + lptr , ";" ) | ( ch == 0 )));
 }
 
-illname()
-{
+void
+illname() {
     error("illegal symbol name");
     junk();
 }
 
-multidef(sname)
-     char *sname;
-{
+void
+multidef(char *sname) {
     error("already defined");
     comment();
     outsnl(sname);
 }
 
-needbrack(str)
-     char *str;
-{
-    if ( match(str) == 0 )
-        {
-            error("missing bracket");
-        }
+void
+needbrack(char *str) {
+    if ( match(str) == 0 ) {
+        error("missing bracket");
+    }
 }
 
-needlval()
-{
+void
+needlval() {
     error("must be lvalue");
 }
 
-findglb(sname)
-     char *sname;
-{
+char *
+findglb(char *sname) {
     char    *ptr;
     ptr = STARTGLB;
     while ( ptr != glbptr)
@@ -103,6 +99,7 @@ findglb(sname)
     return 0;
 }
 
+char *
 findloc(sname)
      char *sname;
 {
@@ -117,16 +114,13 @@ findloc(sname)
     return 0;
 }
 
-addglb( sname , id , typ , value )
-    char *sname, id, typ;
-int  value;
-{
+char *
+addglb( char *sname, char id, char typ, int  value) {
     char    *ptr;
     int     *temp;
     if ( cptr = findglb(sname) )
         return cptr;
-    if ( glbptr >= ENDGLB )
-        {
+    if ( glbptr >= ENDGLB ) {
             error("global symbol table overflow");
             return 0;
         }
@@ -141,10 +135,8 @@ int  value;
     return cptr;
 }
 
-addloc( sname , id , typ , value )
-    char *sname, id, typ;
-int  value;
-{
+char *
+addloc(char *sname, char id, char typ, int  value) {
     char    *ptr;
     int     *temp;
     if ( cptr = findloc(sname) )
@@ -166,9 +158,8 @@ int  value;
 }
 
 /*test if next input is legal symbol name*/
-symname(sname)
-     char *sname;
-{
+int
+symname(char *sname) {
     int     k;
     blanks();
     if ( alpha(ch) == 0 )
@@ -181,39 +172,35 @@ symname(sname)
 }
 
 /*return next available internal label number*/
-getlabel()
-{
+int  
+getlabel() {
     return( ++nxtlab );
 }
 
 /*print specified number as a label*/
-printlabel(label)
-     int  label;
-{
+void 
+printlabel(int  label) {
     outstr("CC");
     outdec(label);
 }
 
 /*test if a given character is alpha*/
-alpha(c)
-     char c;
-{
+int
+alpha(char c) {
     /*   return(((c>='a')&(c<='z'))|((c>='A')&(c<='Z'))|(c=='_')); */
     return (isalpha(c)|(c=='_'));
 }
 
 /*test if a given character is numeric*/
-numeric(c)
-     char c;
-{
+int  
+numeric(char c) {
     /*   return (( c >= '0' ) & ( c <= '9' )); */
     return isdigit(c);
 }
 
 /*test if a character is alphanumeric*/
-an(c)
-     char c;
-{
+int
+an(char c) {
     if (isalpha(c))
         return 1;
     if (isdigit(c))
@@ -222,43 +209,39 @@ an(c)
 }
 
 /*print a cariage return and a string only to console*/
-pl(str)
-     char *str;
-{
+void
+pl(char *str) {
     putchar(EOL);
     fputs(str,stdout);         /* dont add another EOL */
 }
 
-addwhile(ptr)
-     int  ptr[];
-{
+void
+addwhile(int  ptr[]) {
     int     k;
-    if ( wqptr == WQMAX )
-        {
+    if ( wqptr == WQMAX ) {
             error("too many active whiles");
             return;
         }
     k = 0;
-    while ( k < WQSIZ )
-        {
+    while ( k < WQSIZ ) {
             *wqptr++ = ptr[k++];
         }
 }
 
-delwhile()
-{
+void
+delwhile() {
     if ( readwhile() )
         wqptr = wqptr - WQSIZ;
 }
 
-readwhile()
-{
-    if ( wqptr == wq )
-        {
+int
+readwhile() {
+    if ( wqptr == wq ) {
             error("no active whiles");
             return 0;
-        }
-    else return ( wqptr - WQSIZ);
+    } else {
+        return ( wqptr - WQSIZ);
+    }
 }
 
 /* replaced by a char variable updated in gch()
@@ -281,12 +264,12 @@ readwhile()
    }
 */
 
-gch()
 /**if the current character is eol,this function returns 0.Otherwise this
    function returns the current character , and leaves the pointer at the next
    character in the line
 */
-{
+int
+gch() {
     int c;
     if ( c = ch )
         {
@@ -296,26 +279,26 @@ gch()
     return c;
 }
 
-setch()
 /* set up ch and nch using the current lptr */
-{
+void 
+setch() {
     if (ch = nch = line[lptr]&127)
         nch = line[lptr+1]&127;
 }
 
-kill()
 /**this function deletes the current line by setting the pointer to the
    start of the line,and setting the first character to eol.This in effect leaves
    a blank line
 */
-{
+void 
+kill() {
     *line = lptr = ch = nch = 0;
 }
 
-inbyte()
-{
-    while ( ch == 0 )
-        {
+
+int
+inbyte() {
+    while ( ch == 0 ) {
             if ( eof )
                 return 0;
             myInline();
@@ -324,8 +307,8 @@ inbyte()
     return gch();
 }
 
-inchar()
-{
+int
+inchar() {
     if ( ch == 0 )
         myInline();
     if ( eof )
@@ -333,12 +316,12 @@ inchar()
     return ( gch() );
 }
 
-myInline()
-{
+void
+myInline() {
     char    *p;
     FILE    *unit;
-    while(1)
-        {
+
+    while(1) {
             if ( input == 0 )
                 openin();
             if ( eof )

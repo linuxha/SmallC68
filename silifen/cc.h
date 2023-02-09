@@ -57,6 +57,15 @@ extern struct _IO_FILE *stderr;
 #define STORAGE              11
 #define OFFSET               12
 
+/*
+struct symbol{
+    char name[MAXSIZE];
+    int  ident;
+    int  type;
+    int  storage;
+    long offset;
+};
+ */
 /*   system wide name size for symbols       */
 
 #define NAMESIZE             9
@@ -186,6 +195,67 @@ extern void cl_asl();
 #warning FDEBUG IS defined
 #define fdebugf(b,c) fprintf(stderr, b, c)
 #endif
+
+extern void declloc( int  typ );
+extern char *itob(char *s, int i, int base);
+extern char *btoi(char *s, int n, int *pinum, int base);
+extern void ask();
+extern void cl_ask();
+extern void expression();
+
+extern long heir1(long *lval);
+extern long heir2(long *lval);
+extern long heir3(long *lval);
+extern long heir4(long *lval);
+extern long heir5(long *lval);
+extern long heir6(long *lval);
+extern long heir7(long *lval);
+extern long heir8(long *lval);
+extern long heir9(long *lval);
+extern long heir10(long *lval);
+extern long heir11(long *lval);
+
+extern int  needsub();
+extern void newfunc();
+extern void getarg(int t);
+extern int  statement();
+extern void ns();
+extern void compound();
+extern void doif();
+extern void dowhile();
+extern void dofor();
+extern void dodo();
+extern void doreturn();
+extern void docont();
+extern void doasm();
+extern void dobreak();
+
+extern void callfunction(char *ptr);
+extern void junk();
+extern int  endst();
+extern void illname();
+extern void multidef(char *sname);
+extern void needbrack(char *str);
+extern void needlval();
+extern char *findglb(char *sname);
+extern char *addglb(char *sname, char id, char typ, int value);
+extern char *addloc(char *sname, char id, char typ, int value);
+extern int  symname(char *sname);
+extern int  getlabel();
+extern void printlabel(int label);
+extern int  alpha(char c);
+extern int  numeric(char c);
+extern int  an(char c);
+extern void pl(char *str);
+extern void addwhile(int ptr[]);
+extern void delwhile();
+extern int  readwhile();
+extern int  gch();
+extern void setch();
+extern void kill();
+extern int  inbyte();
+extern int  inchar();
+extern void myInline();
 
 #endif  /* CC_H */
 

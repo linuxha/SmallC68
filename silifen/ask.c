@@ -71,7 +71,7 @@ ask() {
 /* fix options from command line */
 void
 cl_ask() {
-    int i;
+    int i, t;
     char *p;
 
     ctext = 0;
@@ -100,7 +100,8 @@ cl_ask() {
                     dump = 1;
                 } else if (*p == 'n') {           /* label number */
                     ++p;
-                    p = p-1+btoi(p,6,&nxtlab,10); /*convert into nxtlab*/
+                    t = -1 + btoi(p,6,&nxtlab,10);
+                    p = p[t];                     /*convert into nxtlab*/
                 } else if (*p == 'o') {           /* skip output file */
                     break;
                 } else {

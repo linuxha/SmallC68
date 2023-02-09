@@ -51,5 +51,6 @@ char  **gargv;                  /*pointer to argument array*/
 FILE  *output;                  /*output fcb pointer*/
 FILE  *input;                   /*input file fcb pointer*/
 FILE  *input2;                  /*include file fcb pointer */
+
 #endif  /* SCC_H */
 

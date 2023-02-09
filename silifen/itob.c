@@ -11,10 +11,13 @@
   #endasm
 */
 /* integer to ascii, s=buffer, i=integer, base is -36..36, -ve for signed */
+char *
 itob(char *s, int i, int base) { 
-    int     val;
+    int     val, t;
     char    *qbuf;
+
     qbuf = s;
+
     /* correct for sign of i */
     if ( (i < 0) & (base <= 0) ) {
         val = -i;
@@ -31,8 +34,11 @@ itob(char *s, int i, int base) {
         }
     }
     /* pick digits off recursively */
-    if ( val >= base )
-        qbuf = qbuf + itob(qbuf,val/base,base);
+    if ( val >= base ) {
+        t    = itob(qbuf,val/base,base);
+        qbuf = qbuf[t];
+        //qbuf = qbuf + itob(qbuf,val/base,base);
+    }
 
     if ((*qbuf = (val % base) + '0') > '9' )
         *qbuf = *qbuf + 7; /* ( 'A'-'9'-1 ) */
@@ -52,9 +58,11 @@ itob(char *s, int i, int base) {
   #endasm
 */
 /* ascii to integer, s=buffer,n=field width,pinum=*int for result,base to 36 */
+char *
 btoi(char *s, int n, int *pinum, int base) {
     int     answer, digit, minus, c;
     char    *p;
+
     p = s;
     answer = minus = 0;      /* assume positive */
     /* skip white */
@@ -78,8 +86,8 @@ btoi(char *s, int n, int *pinum, int base) {
     }
 
     /* check for 0x or 0X */
-    if ((base==16)&(n>=2)) {
-        if ((*s=='0')&((s[1]=='x')|(s[1]=='X'))) {
+    if ((base==16) && (n>=2)) {
+        if ((*s=='0') && ((s[1]=='x') || (s[1]=='X'))) {
             s = s+2;
             n = n-2;
         }
