@@ -33,7 +33,7 @@ main(int argc,char **argv) {
 
     output = stdout;                /*default to stdout for ask()*/
         input =                         /*no input file*/
-        input2 =                        /*no include file*/
+            input2 = 0;                       /*no include file*/
 
     quote[1] = 0;                   /* ... all set to zero ...*/
     *quote = '"';                   /*fake a quote literal*/
@@ -65,6 +65,7 @@ main(int argc,char **argv) {
     exit(0);                         /*then exit to the system*/
 }
 
+void
 parse()
 /* parse all the input text */
 {
@@ -96,8 +97,8 @@ parse()
 /*                                                                   */
 /*           dump the literal pool                                   */
 /*                                                                   */
-dumplits()
-{
+void
+dumplits() {
     int     j;
     int     k;
     if ( litptr == 0 )                      /*if nothing there exit*/
@@ -123,59 +124,59 @@ dumplits()
 /*                                                                   */
 /*           dump all static variables                                */
 /*                                                                   */
-dumpglbs()
-{
-    int j, *temp;
+void
+dumpglbs() {
+    int j;
+    char *temp;
+
     cptr = STARTGLB;
-    while ( cptr < glbptr )
-        {
-            if ( cptr[IDENT] != FUNCTION )
-                /*do if anything but function*/
-                {
-                    if ( glbflag )
-                        {
-                            outstr(cptr);           /*output name as label*/
-                            temp = cptr + OFFSET; /* get int from char array */
-                            j = *temp;     /*calc # bytes*/
-                            if ((cptr[TYPE] == CINT ) | (cptr[IDENT] == POINTER))
-                                j=j*intwidth;
-                            defstorage( j );   /* define storage */
-                            pubref(cptr);
-                        }
-                    else
-                        {
-                            extvref(cptr);
-                        }
-                }
-            cptr = cptr + SYMSIZ;
+
+    while ( cptr < glbptr ) {
+        if ( cptr[IDENT] != FUNCTION ) {
+            /*do if anything but function*/
+            if ( glbflag ) {
+                outstr(cptr);           /*output name as label*/
+                temp = cptr + OFFSET; /* get int from char array */
+                j = *temp;     /*calc # bytes*/
+
+                if ((cptr[TYPE] == CINT ) | (cptr[IDENT] == POINTER))
+
+                    j=j*intwidth;
+                defstorage( j );   /* define storage */
+                pubref(cptr);
+            } else {
+                extvref(cptr);
+            }
         }
+        cptr = cptr + SYMSIZ;
+    }
 }
 
-dumpextf()
 /* dump references to external functions */
-{
-    int *temp;
+void
+dumpextf() {
+    char *temp;
+
     cptr = STARTGLB;
-    while( cptr < glbptr )
-        {
-            if ( cptr[IDENT] == FUNCTION )
-                {
-                    temp = cptr + OFFSET;
-                    if ( *temp == 0 )
-                        extfref(cptr);
-                    else
-                        pubref(cptr);
-                }
-            cptr = cptr + SYMSIZ;
+
+    while( cptr < glbptr ) {
+        if ( cptr[IDENT] == FUNCTION ) {
+            temp = cptr + OFFSET;
+            if ( *temp == 0 )
+                extfref(cptr);
+            else
+                pubref(cptr);
         }
+        cptr = cptr + SYMSIZ;
+    }
 }
 
 
 /*                                                                   */
 /*           report any errors                                       */
 /*                                                                   */
-errorsummary()
-{
+void
+errorsummary() {
     /*see if there is anything hanging*/
     if ( ncmp )
         error("missing closing brackets");/*open compound statement*/
@@ -191,9 +192,8 @@ errorsummary()
 /*     makes an entry into the symbol table so that subsequent       */
 /*   references can call symbol by name                              */
 /*                                                                   */
-declglb(typ)
-     int  typ;
-{
+void
+declglb(int  typ) {
     int     k;
     int     j;
     char    sname[NAMESIZE];

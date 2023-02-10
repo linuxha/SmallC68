@@ -14,11 +14,12 @@
 /* this file contains assignment, logical operators and comparisons */
 
 // For 64 bit Linux char * == 8 bytes long
-// For 64 bit Linux int    == 8 bytes long
+// For 64 bit Linux long   == 8 bytes long
+// For 64 bit Linux int    == 4 bytes long
 void
 expression() {
-    long    lval[2];
-
+    long    lval[2];            // <- Pretty sure this can be char
+                                // BUT this means I need to change exverything to match
     if ( heir1(lval) )
         rvalue(lval);
 }

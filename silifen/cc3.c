@@ -100,17 +100,17 @@ findglb(char *sname) {
 }
 
 char *
-findloc(sname)
-     char *sname;
-{
+findloc(char *sname) {
     char    *ptr;
+
     ptr = STARTLOC;
-    while ( ptr != locptr )
-        {
-            if ( astreq(sname,ptr,NAMEMAX))
-                return ptr;
-            ptr = ptr + SYMSIZ;
-        }
+
+    while ( ptr != locptr ) {
+        if ( astreq(sname, ptr, NAMEMAX))
+            return ptr;
+        ptr = ptr + SYMSIZ;
+    }
+
     return 0;
 }
 

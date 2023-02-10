@@ -8,20 +8,19 @@
 
 #include "cc.h"
 
-keepch(c)
-     char c;
-     /**store the character in the temporary store used for the processed input
-        line.This is used by preprocess.This function returns the argument to the
-        calling function,and bumps up the temporary line pointer,if the line is not
-        full
-     */
-{
+
+/**store the character in the temporary store used for the processed input
+   line.This is used by preprocess.This function returns the argument to the
+   calling function,and bumps up the temporary line pointer,if the line is not
+   full
+*/
+char
+keepch(char c) {
     mline[mptr] = c;
     if( mptr < MPMAX) ++mptr;
     return (c);
 }
 
-preprocess()
 /**this function preprocess C input lines to allow the compiler to operate
    it performs the following:-
    1)   it strips out comments
@@ -32,7 +31,8 @@ preprocess()
    It preprocesses the line,putting the results in mline[],transfering them back
    to line when processing is complete
 */
-{
+void
+preprocess() {
     int k;
     char c, sname[NAMESIZE];
     if( cmode == 0 ) return;                /*do not process #asm lines*/
@@ -129,13 +129,13 @@ preprocess()
     setch();
 }
 
-addmac()
 /**this function adds a macro definition to the table
    the form is the string followed by a null,followed by the replacement string
    again terminated by a null.This function gives up if the macro table is full.
    nothing is returned
 */
-{
+void
+addmac() {
     char sname[NAMESIZE];
     int k;
     if ( symname(sname)==0)
@@ -151,26 +151,24 @@ addmac()
     if ( macptr >= MACMAX)  error("macro table full");
 }
 
-putmac(c)
 /**append the character in the macro list
    this function returns the argument
 */
-     char c;
-{
+char
+putmac(char c) {
     macq[macptr]=c;         /*store character in the array*/
     if( macptr<= MACMAX )
         macptr++;               /*and bump up pointer if room is left*/
     return (c);
 }
 
-findmac(sname)
 /**this function tries to find the macro in the #define list
    if the character is found,the function returns the index of the string to
    be used as the replacement.If no match is found,then the function returns
    zero
 */
-     char *sname;
-{
+int
+findmac(char *sname) {
     char *p;
     p = macq;
     while( p < macq + macptr )         /*search up to end of current list*/
@@ -188,11 +186,10 @@ findmac(sname)
     return (0);                     /*no match return 0*/
 }
 
-outbyte(c)
 /**this function outputs a character to the output device. 
    if output = stdout the character is output to the screen */
-     char c;
-{
+char
+outbyte(char c) {
     if( c == 0) return (0);
     if( fputc(c,output) != c)
         {
@@ -202,10 +199,9 @@ outbyte(c)
     return(c);
 }
 
-outstr(ptr)
 /**output the string to the disk if a file is open,otherwise the terminal*/
-     char    *ptr;
-{
+void
+outstr(char    *ptr) {
     fputs(ptr,output);
     if (ferror(output))
         {
@@ -214,19 +210,18 @@ outstr(ptr)
         }
 }
 
-nl()
 /**output a carriage return to the output device */
-{
+void
+nl() {
     outbyte( EOL );
 }
 
-error(ptr)
 /**output an error message on the output device
    the incorrect line is printed,followed by another line with an arrow pointing
    to the error,and a further line,indicating the type of error
 */
-     char ptr[];
-{
+void
+error(char ptr[]) {
     int k;
     FILE *store;                              /*output device store*/
     comment();
@@ -291,21 +286,19 @@ error(ptr)
         }
 }
 
-ps(ptr)
 /**this outputs the string to the terminal only,without a carriage return
  */
-     char ptr[];
-{
+char 
+ps(char ptr[]) {
     fputs(ptr,stdout);
 }
 
-streq(str1,str2)
 /**this function matches string 1 against string 2.string 1 may be longer
    than 2.If the strings match,then the length of string 2 is returned,otherwise
    0 is returned
 */
-    char str1[],str2[];
-{
+int
+streq(char str1[], char str2[]) {
     int n;
     n = strlen(str2);
     if (strncmp(str1,str2,n))
@@ -314,10 +307,8 @@ streq(str1,str2)
         return n;
 }
 
-astreq(str1,str2,len)
-    char str1[],str2[];
-int len;
-{
+int  
+astreq(char str1[], char str2[], int len) {
     int k;
     k = 0;
     while( k <len )
@@ -332,9 +323,8 @@ int len;
     return(k);
 }
 
-match(lit)
-     char *lit;
-{
+int  
+match(char *lit) {
     int     k;
     blanks();
     if ( k = streq(line + lptr,lit) )
@@ -346,10 +336,8 @@ match(lit)
     return 0;
 }
 
-amatch(lit,len)
-     char *lit;
-     int  len;
-{
+int
+amatch(char *lit, int  len) {
     int     k;
     blanks();
     if ( k = astreq(line + lptr , lit , len ) )
@@ -363,8 +351,8 @@ amatch(lit,len)
     return 0;
 }
 
-blanks()
-{
+void 
+blanks() {
     while (1)
         {
             while ( ch == 0 )
@@ -380,9 +368,8 @@ blanks()
         }
 }
 
-outdec(number)
-     int  number;
-{
+void
+outdec(int  number) {
     int     k;
     int     zs;
     char    c;
@@ -411,13 +398,13 @@ outdec(number)
         }
 }
 
-primary(lval)
-     int  *lval;
-{
+long
+primary(long *lval) {
     char    *ptr;
     char    sname[NAMESIZE];
     int     num;
-    int     k;
+    long    k;
+
     if ( match("(") )
         {
             k = heir1(lval);
@@ -457,8 +444,7 @@ primary(lval)
         }
     if ( constant(&num) )
         return ( *lval = lval[1] = 0 );
-    else
-        {
+    else {
             error("invalid expression");
             immed();
             outdec(0);
@@ -468,34 +454,30 @@ primary(lval)
         }
 }
 
-store(lval)
-     int  *lval;
-{
+void
+store(int  *lval) {
     if ( lval[1] == 0 )
         putmem(*lval);
     else putstk(lval[1]);
 }
 
-rvalue(lval)
-     int  *lval;
-{
+void
+rvalue(long *lval) {
     if ( ( *lval != 0 ) & ( lval[1] == 0 ) )
         getmem(*lval);
     else indirect(lval[1]);
 }
 
-test(label)
-     int  label;
-{
+void
+test(int  label) {
     needbrack("(");
     expression();
     needbrack(")");
     testjump(label);
 }
 
-constant(val)
-     int  *val;
-{
+int  
+constant(int  *val) {
     if ( number(val) )
         {
             immed();
@@ -520,9 +502,8 @@ constant(val)
     return 1;
 }
 
-number(val)
-     int  *val;
-{
+int
+number(int  *val) {
     int     k;
     int     minus,i,base;
     char    buf[20],c;
@@ -567,9 +548,8 @@ number(val)
     return 1;
 }
 
-pstr(val)
-     int  val[];
-{
+int
+pstr(int val[]) {
     int     k;
     char    c;
     k = 0;
@@ -582,9 +562,8 @@ pstr(val)
     return 1;
 }
 
-qstr(val)
-     int  val[];
-{
+int
+qstr(int  val[]) {
     if ( match(quote) == 0 )
         return 0;
     *val = litptr;
@@ -607,9 +586,9 @@ qstr(val)
     return 1;
 }
 
-litchar()
 /* sort out backslash sequences */
-{
+int  
+litchar() {
     int i,oct;
     if ((ch!=92)|(nch==0))
         return gch();

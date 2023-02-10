@@ -196,7 +196,14 @@ extern void cl_asl();
 #define fdebugf(b,c) fprintf(stderr, b, c)
 #endif
 
-extern void declloc( int  typ );
+extern void parse();
+extern void dumplits();
+extern void dumpglbs();
+extern void dumpextf();
+extern void errorsummary();
+extern void declglb(int typ);
+
+extern void declloc(int typ );
 extern char *itob(char *s, int i, int base);
 extern char *btoi(char *s, int n, int *pinum, int base);
 extern void ask();
@@ -230,6 +237,7 @@ extern void docont();
 extern void doasm();
 extern void dobreak();
 
+// cc3
 extern void callfunction(char *ptr);
 extern void junk();
 extern int  endst();
@@ -238,6 +246,7 @@ extern void multidef(char *sname);
 extern void needbrack(char *str);
 extern void needlval();
 extern char *findglb(char *sname);
+extern char *findloc(char *sname);
 extern char *addglb(char *sname, char id, char typ, int value);
 extern char *addloc(char *sname, char id, char typ, int value);
 extern int  symname(char *sname);
@@ -256,6 +265,102 @@ extern void kill();
 extern int  inbyte();
 extern int  inchar();
 extern void myInline();
+
+// cc4
+extern char keepch(char c);
+extern void preprocess();
+extern void addmac();
+extern char putmac(char c);
+extern int  findmac(char *sname);
+extern char outbyte(char c);
+extern void outstr(char *ptr);
+extern void nl();
+extern void error(char ptr[]);
+extern char ps(char ptr[]);
+extern int  streq(char str1[], char str2[]);
+extern int  astreq(char str1[], char str2[], int len);
+extern int  match(char *lit);
+extern int  amatch(char *lit, int  len);
+extern void blanks();
+extern void outdec(int  number);
+extern long primary(long *lval);
+extern void store(int  *lval);
+extern void rvalue(long *lval);
+extern void test(int  label);
+extern int  constant(int  *val);
+extern int  number(int  *val);
+extern int  pstr(int val[]);
+extern int  qstr(int  val[]);
+extern int  litchar();
+
+// cc8
+extern void outsnl(char *s);
+extern void comment();
+extern void outup(char *s);
+extern void header();
+extern void trailer();
+extern void getmem(char *sym);
+extern void getloc(char *sym);
+extern void getglb();
+extern void putmem(char *sym);
+extern void putstk(char typeobj);
+extern void indirect(char typeobj);
+extern void swap();
+extern void immed();
+extern void push();
+extern void swapstk();
+extern void call(char *sname, int  argcnt);
+extern void ret();
+extern void callstk(int argcnt);
+extern void jump(int  label);
+extern void testjump(int label);
+extern void codeseg();
+extern void litseg();
+extern void dataseg();
+extern void extfref(char *ptr);
+extern void extvref(char *ptr);
+extern void pubref(char *ptr);
+extern void defbyte();
+extern void defstorage(int n);
+extern void defword();
+extern void incstack( int n );
+extern int  modstk(int newsp);
+extern void scale(int width);
+extern void cadd();
+extern void csub();
+extern void mult();
+extern void myDiv();
+extern void mod();
+extern void or();
+extern void xor();
+extern void and();
+extern void casr();
+extern void casl();
+extern void cneg();
+extern void ccom();
+extern void cinc(int n);
+extern void cdec(int n);
+extern void eq();
+extern void ne();
+extern void lt();
+extern void le();
+extern void gt();
+extern void ge();
+extern void ult();
+extern void ule();
+extern void ugt();
+extern void uge();
+
+// cc9.c
+extern void openout();
+extern void openin();
+extern void doinclude();
+extern void closeout();
+extern void closein(FILE *unit);
+extern void getl(char *buf);
+
+// dump
+extern void dumpstats();
 
 #endif  /* CC_H */
 

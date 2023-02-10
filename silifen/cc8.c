@@ -8,38 +8,38 @@
 
 #include "cc.h"
 
-outsnl(s)
-     char    *s;
-{
+void
+outsnl(char *s) {
     outstr(s);
     nl();
 }
 
 /*begin a comment line for the assembler*/
-comment()
-{
+void
+comment() {
+#if 0
     outbyte('*');
     outbyte(' ');
+#else
+    outstr(";* ");
+#endif
 }
 
-outup(s)
-     char *s;
-{
+void 
+outup(char *s) {
     while(*s)
         outbyte(toupper(*s++));
 }
 
 /*print all assembler info before any code is generated*/
-header()
-{
-    if (glbflag)
-        {
+void
+header() {
+    if (glbflag) {
             comment();
             outsnl(version);
             outstr(" lib libdef\n");
         }
-    else
-        {
+    else {
             outstr("/* small-C precompiled module */\n");
             outstr("#asm\n");
             comment();
@@ -48,10 +48,9 @@ header()
 }
 
 /*print any assembler stuff needed after all code*/
-trailer()
-{
-    if (glbflag)
-        {
+void
+trailer() {
+    if (glbflag) {
             outstr("end\n");     /* end of uninitialised data segment */
             outstr(" end START\n"); /* xfer address is START */
         }
@@ -60,9 +59,8 @@ trailer()
 }
 
 /*fetch a static memory cell into the primary register*/
-getmem(sym)
-     char *sym;
-{
+void
+getmem(char *sym) {
     if ( ( sym[IDENT] != POINTER ) & ( sym[TYPE] == CCHAR ) )
         {
             outstr(" GETB ");
@@ -76,10 +74,10 @@ getmem(sym)
 }
 
 /*fetch the address of the specified local into the primary register*/
-getloc(sym)
-     char *sym;
-{
-    int *temp;
+void
+getloc(char *sym) {
+    char *temp;
+
     outstr(" GETLOC ");
     temp = sym + OFFSET;
     outdec( *temp - sp );
@@ -87,15 +85,14 @@ getloc(sym)
 }
 
 /* fetch address of a global into the primary register */
-getglb()
-{
+void
+getglb() {
     outstr(" GETGLB ");
 }
 
 /*store the primary register into the specified static memory cell*/
-putmem(sym)
-     char *sym;
-{
+void
+putmem(char *sym) {
     if ( ( sym[IDENT] != POINTER ) & ( sym[TYPE] == CCHAR ) )
         outstr(" PUTB ");
     else
@@ -105,9 +102,8 @@ putmem(sym)
 
 /*store the specified object type in the primary register at the address*/
 /*on top of the stack*/
-putstk(typeobj)
-     char typeobj;
-{
+void
+putstk(char typeobj) {
     if ( typeobj == CCHAR )
         outstr(" PUTSB\n");
     else
@@ -118,9 +114,8 @@ putstk(typeobj)
 
 /*fetch the specified object type indirect through the primary register*/
 /*into the primary register*/
-indirect(typeobj)
-     char typeobj;
-{
+void
+indirect(char typeobj) {
     if ( typeobj == CCHAR )
         outstr(" GETBI\n");
     else
@@ -128,36 +123,34 @@ indirect(typeobj)
 }
 
 /*swap primary and secondary registers*/
-swap()
-{
+void
+swap() {
     outstr(" SWAP\n");
 }
 
 /*print partial instruction to get partial value*/
 /*into primary register*/
-immed()
-{
+void
+immed() {
     outstr(" IMMED ");
 }
 
 /*push the primary register onto the stack*/
-push()
-{
+void
+push() {
     outstr(" PUSH\n");
     sp = sp - intwidth;
 }
 
 /*swap the primary register and the top of the stack*/
-swapstk()
-{
+void
+swapstk() {
     outstr(" SWAPS\n");
 }
 
 /*call the specified subroutine name*/
-call(sname,argcnt)
-     char *sname;
-     int  argcnt;
-{
+void
+call(char *sname, int  argcnt) {
     outstr(" CALL ");
     outstr(sname);
     outbyte(',');
@@ -166,47 +159,44 @@ call(sname,argcnt)
 }
 
 /*return from a subroutine*/
-ret()
-{
+void
+ret() {
     outstr(" RET\n");
 }
 
 /*call subroutine at address in stack*/
-callstk(argcnt)
-     int argcnt;
-{
+void
+callstk(int argcnt) {
     outstr(" CALLS ");
     outdec(argcnt);
     nl();
 }
 
 /*jump to a specified internal label number*/
-jump(label)
-     int  label;
-{
+void
+jump(int  label) {
     outstr(" GOTO ");
     printlabel(label);
     nl();
 }
 
 /*test the primary register and jump if false to label*/
-testjump(label)
-     int  label;
-{
+void
+testjump(int label) {
     outstr(" TEST ");
     printlabel(label);
     nl();
 }
 
-codeseg()
 /* declare code segment */
-{
+void
+codeseg() {
     outstr(" CSEG\n");
 }
 
-litseg()
 /* declare literal segment */
-{
+void
+litseg() {
     if (glbflag)
         {
             outstr(" lib libload\n");  /* load runtime library code */
@@ -216,8 +206,8 @@ litseg()
         outstr(" LSEG\n");
 }
 
-dataseg()
-/* declare data segment */
+void
+dataseg() /* declare data segment */
 { /* label end of initialised data segment */
     if (glbflag)
         outstr("edata DSEG\n");
@@ -225,9 +215,8 @@ dataseg()
         outstr(" DSEG\n");
 }
 
-extfref(ptr)
-     char    *ptr;
-{
+void
+extfref(char *ptr) {
     outstr(" EXTF ");
     outstr(ptr);
     outbyte(',');
@@ -235,45 +224,41 @@ extfref(ptr)
     nl();
 }
 
-extvref(ptr)
-     char *ptr;
-{
+void
+extvref(char *ptr) {
     outstr(" EXTV ");
     outsnl(ptr);
 }
 
-pubref(ptr)
-     char    *ptr;
-{
+void
+pubref(char *ptr) {
     outstr(" PUB ");
     outsnl(ptr);
 }
 
 /*print pseudo op to define a byte*/
-defbyte()
-{
+void
+defbyte() {
     outstr(" fcb ");
 }
 
 /*print pseudo-op to define storage*/
-defstorage(n)
-     int n;
-{
+void
+defstorage(int n) {
     outstr(" rmb ");
     outdec( n );
     nl();
 }
 
 /*print pseudo-op to define a word*/
-defword()
-{
+void
+defword() {
     outstr(" fdb ");
 }
 
 /* increment stack pointer by n */
-incstack( n )
-     int n;
-{
+void
+incstack( int n ) {
     outstr(" INCS ");
     outdec( n );
     nl();
@@ -281,9 +266,8 @@ incstack( n )
 }
 
 /*modify stack pointer to new value indicated*/
-modstk(newsp)
-     int  newsp;
-{
+int
+modstk(int newsp) {
     int     k;
     k = newsp - sp;
     if ( k == 0 )
@@ -292,9 +276,8 @@ modstk(newsp)
     return newsp;
 }
 
-scale(width)
-     int width;
-{
+void
+scale(int width) {
     outstr(" SCALE ");
     outdec(width);
     nl();
@@ -302,107 +285,105 @@ scale(width)
 
 /* add the primary register to the stack and pull the stack ( results in*/
 /* primary)*/
-cadd()
-{
+void
+cadd() {
     outstr(" ADDS\n");
     sp = sp + intwidth;
 }
 
 /*subtract the primary register from the stack and pull the stack (results*/
 /*in primary)*/
-csub()
-{
+void
+csub() {
     outstr(" SUBS\n");
     sp = sp + intwidth;
 }
 
 /*multiply the value on the stack by d and pull off( results in primary )*/
-mult()
-{
+void
+mult() {
     outstr(" MULS\n");
     sp = sp + intwidth;
 }
 
 /*divide the value on the stack by the value in d 
   ( quotient in primary,remainder in secondary ) */
-myDiv()
-{
+void
+myDiv() {
     outstr(" DIVS\n");
     sp = sp + intwidth;
 }
 
 /*compute the remainder ( mod ) of the value on the stack by the value in d
   (remainder in primary,quotient in secondary*/
-mod()
-{
+void
+mod() {
     outstr(" MODS\n");
     sp = sp + intwidth;
 }
 
 /*inclusive or the primary reg with the stack and pull the stack */
 /*( results in primary )*/
-or()
-{
+void
+or() {
     outstr(" ORS\n");
     sp = sp + intwidth;
 }
 
 /*exclusive or the primary reg with the stack and pull */
 /*(results in primary )*/
-xor()
-{
+void
+xor() {
     outstr(" EORS\n");
     sp = sp + intwidth;
 }
 
 /*'and' the primary reg with the stack and pull( results in primary )*/
-and()
-{
+void
+and() {
     outstr(" ANDS\n");
     sp = sp + intwidth;
 }
 
 /*arithmetic shift right the value on the stack no of times in d
   (results in primary)*/
-casr()
-{
+void
+casr() {
     outstr(" ASRS\n");
     sp = sp + intwidth;
 }
 
 /*arithmetic left shift the value on the stack number of times in d
   (results in primary)*/
-casl()
-{
+void
+casl() {
     outstr(" ASLS\n");
     sp = sp + intwidth;
 }
 
 /*form two's complement of primary register*/
-cneg()
-{
+void
+cneg() {
     outstr(" NEGD\n");
 }
 
 /*form one's complement of primary register*/
-ccom()
-{
+void
+ccom() {
     outstr(" COMD\n");
 }
 
 /*increment the primary register by n */
-cinc( n )
-     int n;
-{
+void
+cinc( int n ) {
     outstr(" INCD ");
     outdec( n );
     nl();
 }
 
 /*decrement the primary register by n */
-cdec( n )
-     int n;
-{
+void
+cdec( int n) {
     outstr(" DECD ");
     outdec( n );
     nl();
@@ -414,71 +395,71 @@ cdec( n )
 /*register. They are pure macro's and pull the stack themselves */
 
 /*test for equal*/
-eq()
-{
+void
+eq() {
     outstr(" CCEQ\n");
     sp = sp + intwidth;
 }
 
 /*test for not equal*/
-ne()
-{
+void
+ne() {
     outstr(" CCNE\n");
     sp = sp + intwidth;
 }
 
 /*test for less than ( signed )*/
-lt()
-{
+void
+lt() {
     outstr(" CCLT\n");
     sp = sp + intwidth;
 }
 
 /*test for less than or equal to (signed)*/
-le()
-{
+void
+le() {
     outstr(" CCLE\n");
     sp = sp + intwidth;
 }
 
 /*test for greater than ( signed )*/
-gt()
-{
+void
+gt() {
     outstr(" CCGT\n");
     sp = sp + intwidth;
 }
 
 /*test for greater than or equal to ( signed )*/
-ge()
-{
+void
+ge() {
     outstr(" CCGE\n");
     sp = sp + intwidth;
 }
 
 /*test for less than ( unsigned )*/
-ult()
-{
+void
+ult() {
     outstr(" CCULT\n");
     sp = sp + intwidth;
 }
 
 /*test for less than or equal to ( unsigned )*/
-ule()
-{
+void
+ule() {
     outstr(" CCULE\n");
     sp = sp + intwidth;
 }
 
 /*test for greater than ( unsigned)*/
-ugt()
-{
+void
+ugt() {
     outstr(" CCUGT\n");
     sp = sp + intwidth;
 }
 
 /*test for greater than or equal to ( unsigned )*/
-uge()
-{
+void
+uge() {
     outstr(" CCUGE\n");
     sp = sp + intwidth;
 }
