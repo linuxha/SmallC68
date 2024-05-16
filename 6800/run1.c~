@@ -1,3 +1,4 @@
+#asm
         NAM SMALL-C RUN PACK FOR 6801/6301
 
 RAM     EQU $1000
@@ -46,50 +47,50 @@ NEXT2 LDAB 0,X GET THE PSEUDO-INSTRUCTION
 ;*                  THE JUMP TABLE                            *
 ;**************************************************************
 
-JTABLE  FDB     LD1IM           ;*  #0  #0
-        FDB     LD1SOFF         ;*  #1  #2
-        FDB     LD1             ;*  #2  #4
-        FDB     LDB1            ;*  #3  #6
-        FDB     LD1R            ;*  #4  #8
-        FDB     LDB1R           ;*  #5  #10
-        FDB     ST1             ;*  #6  #12
-        FDB     STB1            ;*  #7  #14
-        FDB     ST1SP           ;*  #8  #16
-        FDB     STB1SP          ;*  #9  #18
-        FDB     PUSHR1          ;*  #10 #20
-        FDB     EXG1            ;*  #11 #22
-        FDB     JMPL            ;*  #12 #24
-        FDB     BRZL            ;*  #13 #26
-        FDB     JSRL            ;*  #14 #28
-        FDB     JSRSP           ;*  #15 #30
-        FDB     RTSC            ;*  #16 #32
-        FDB     MODSP           ;*  #17 #34
-        FDB     DBL1            ;*  #18 #36
-        FDB     ADDS            ;*  #19 #38
-        FDB     SUBFST          ;*  #20 #40
-        FDB     MUL1            ;*  #21 #42
-        FDB     DIV1            ;*  #22 #44
-        FDB     MOD             ;*  #23 #46
-        FDB     ORS             ;*  #24 #48
-        FDB     XORS            ;*  #25 #50
-        FDB     ANDS            ;*  #26 #52
-        FDB     ASRS            ;*  #27 #54
-        FDB     ASLS            ;*  #28 #56
-        FDB     NEGR            ;*  #29 #58
-        FDB     NOTR            ;*  #30 #60
-        FDB     INCR            ;*  #31 #62
-        FDB     DECR            ;*  #32 #64
-        FDB     ZEQ             ;*  #33 #66
-        FDB     ZNE             ;*  #34 #68
-        FDB     ZLT             ;*  #35 #70
-        FDB     ZLE             ;*  #36 #72
-        FDB     ZGT             ;*  #37 #74
-        FDB     ZGE             ;*  #38 #76
-        FDB     ULT             ;*  #39 #78
-        FDB     ULE             ;*  #40 #80
-        FDB     UGT             ;*  #41 #82
-        FDB     UGE             ;*  #42 #84
-        FDB     ASMC            ;*  #43 #86
+JTABLE FDB LD1IM  #0
+ FDB LD1SOFF #1
+ FDB LD1 #2
+ FDB LDB1 #3
+ FDB LD1R #4
+ FDB LDB1R #5
+ FDB ST1 #6
+ FDB STB1 #7
+ FDB ST1SP #8
+ FDB STB1SP #9
+ FDB PUSHR1 #10
+ FDB EXG1 #11
+ FDB JMPL #12
+ FDB BRZL #13
+ FDB JSRL #14
+ FDB JSRSP #15
+ FDB RTSC #16
+ FDB MODSP #17
+ FDB DBL1 #18
+ FDB ADDS #19
+ FDB SUBFST #20
+ FDB MUL1 #21
+ FDB DIV1 #22
+ FDB MOD #23
+ FDB ORS #24
+ FDB XORS #25
+ FDB ANDS #26
+ FDB ASRS #27
+ FDB ASLS #28
+ FDB NEGR #29
+ FDB NOTR #30
+ FDB INCR #31
+ FDB DECR #32
+ FDB ZEQ #33
+ FDB ZNE #34
+ FDB ZLT #35
+ FDB ZLE #36
+ FDB ZGT #37
+ FDB ZGE #38
+ FDB ULT #39
+ FDB ULE #40
+ FDB UGT #41
+ FDB UGE #42
+ FDB ASMC #43
 
 ;*************************************************************
 ;*-------------------------
@@ -101,11 +102,11 @@ LD1IM LDX PC
 ;*-------------------------
 ;* #1 LOAD STACK ADDRESS + OFFSET INTO REG
 LD1SOFF TSX
-        STX     R1A             ;* SAVE STACK VALUE
-        LDX     PC
-        LDD     0,X             ;* GET OFFSET
-        ADDD    R1A             ;* ADD OFFSET
-        JMP     BUMP2A
+ STX R1A SAVE STACK VALUE
+ LDX PC
+ LDD 0,X GET OFFSET
+ ADDD R1A ADD OFFSET
+ JMP BUMP2A
 
 ;*-------------------------
 ;* #2  LOAD WORD @ ADDRESS
@@ -218,8 +219,8 @@ JSRSP PULX
 
 ;*-------------------------
 ;* #16  RETURN TO CALLER
-RTSC    PULX                    ;* GET ADDRESS
-        JMP     NEXT1
+RTSC PULX GET ADDRESS
+ JMP NEXT1
 
 ;*-------------------------
 ;* #17  MODIFY THE STACK POINTER
@@ -534,3 +535,6 @@ WARMS BRA *
 
 CODE EQU *
 
+#endasm
+
+/* -*- mode: asm-mode; -*- */

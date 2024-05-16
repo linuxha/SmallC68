@@ -71,7 +71,9 @@ char   *currfn,         /* ptr to symtab entry for current fn. */
 char    quote[2];       /* literal string for '"' */
 char    *cptr;          /* work ptr to any char buffer */
 int     *iptr;          /* work ptr to any int buffer */
-#else
+
+#else // -----------------------------------------------------------------------
+
 char    symtab[SYMTBSZ];        /* symbol table */
 char    *glbptr;                /* ptrs to next entries */
 long    locidx;
@@ -1214,7 +1216,7 @@ nl() {
 
 void
 tab() {
-    outbyte('\t');
+    outbyte('\t');	
 }
 
 void
@@ -1515,8 +1517,13 @@ qstr(long val[]) {
 /* Begin a comment line for the assembler */
 void
 comment() {
-    //outbyte('*');
-    outstr(";* ");
+    #ifdef ASL
+        // ASL assembler
+        outstr(";* ");
+    #else
+        // TSC, Motorola assembler
+        outbyte('*');
+    #endif
 }
 
 /* Put out assembler info before any code is generated */
@@ -1556,10 +1563,13 @@ trailer() {
 /* Fetch a static memory cell into the primary register */
 void
 getmem(char *sym) {
-    if((sym[IDENT]!=POINTER)&(sym[TYPE]==CCHAR))
+    if((sym[IDENT]!=POINTER)&(sym[TYPE]==CCHAR)) {
+        outstr("\n;* getmem(3)\n");
         pseudoins(3);
-    else
+    } else {
+        outstr("\n;* getmem(2)\n");
         pseudoins(2);
+    }
     defword(); outstr(sym+NAME); nl();
 }
 
@@ -1567,6 +1577,7 @@ getmem(char *sym) {
 /*      into the primary register */
 void
 getloc(char *sym) {
+    outstr("\n;* getloc(1)\n");
     pseudoins(1); defword();
     outdec((sym[OFFSET]&255)*256+(sym[OFFSET+1]&255)-Zsp);
     nl();
@@ -1576,10 +1587,13 @@ getloc(char *sym) {
 /*      static memory cell */
 void
 putmem(char *sym) {
-    if((sym[IDENT]!=POINTER)&(sym[TYPE]==CCHAR))
+    if((sym[IDENT]!=POINTER)&(sym[TYPE]==CCHAR)) {
+        outstr("\n;* putmem(7)\n");
         pseudoins(7);
-    else 
+    } else {
+        outstr("\n;* putmem(6)\n");
         pseudoins(6);
+    }
     defword();
     outstr(sym+NAME);
     nl();
@@ -1590,28 +1604,40 @@ putmem(char *sym) {
 void
 putstk(char typeobj) {
     zpop();
-    if(typeobj==CCHAR) pseudoins(9);
-    else pseudoins(8);
+    if(typeobj==CCHAR) {
+        outstr("\n;* putstk(9)\n");
+        pseudoins(9);
+    } else {
+        outstr("\n;* putstk(8)\n");
+        pseudoins(8);
+    }
 }
 
 /* Fetch the specified object type indirect through the */
 /*      primary register into the primary register  */
 void
 indirect(char typeobj) {
-    if(typeobj==CCHAR) pseudoins(5);
-    else pseudoins(4);
+    if(typeobj==CCHAR) {
+        outstr("\n;* indirect(5)\n");
+        pseudoins(5);
+    } else {
+        outstr("\n;* indirect(4)\n");
+        pseudoins(4);
+    }
 }
 
 /* Print partial instruction to get an immediate value */
 /*      into the primary register */
 void
 immed() {
+    outstr("\n;* imediate(0)\n");
     pseudoins(0); defword();
 }
 
 /* Push the primary register onto the stack */
 void
 zpush() {
+    outstr("\n;* zpush(10)\n");
     pseudoins(10);
     Zsp=Zsp-2;
 }
@@ -1619,18 +1645,21 @@ zpush() {
 /* Pop the top of the stack  */
 void
 zpop() {
+    outstr("\n;* zpop()\n");
     Zsp=Zsp+2;
 }
 
 /* Swap the primary register and the top of the stack */
 void
 swapstk() {
+    outstr("\n;* swapstk(11)\n");
     pseudoins(11);
 }
 
 /* Call the specified subroutine name */
 void
 zcall(char *sname) {
+    outstr("\n;* zcall(14)\n");
     pseudoins(14); defword();
     outstr(sname);
     nl();
@@ -1639,12 +1668,14 @@ zcall(char *sname) {
 /* Return from subroutine */
 void
 zret() {
+    outstr("\n;* zret(16)\n");
     pseudoins(16);
 }
 
 /* Perform subroutine call to value on top of stack */
 void
 callstk() {
+    outstr("\n;* callstk(15)\n");
     pseudoins(15);
     Zsp=Zsp-2;
 }
@@ -1652,6 +1683,7 @@ callstk() {
 /* Jump to specified internal label number */
 void
 jump(long label) {
+    outstr("\n;* jump(15)\n");
     pseudoins(12); defword();
     printlabel(label);
     nl();
@@ -1660,6 +1692,7 @@ jump(long label) {
 /* Test the primary register and jump if false to label */
 void
 testjump(long label) {
+    outstr("\n;* testjump(13)\n");
     pseudoins(13); defword();
     printlabel(label);
     nl();
@@ -1668,6 +1701,9 @@ testjump(long label) {
 /* Print a pseudo-instruction for interpreter  */
 void
 pseudoins(long k) {
+    outstr(";* pseudoins("); // njc
+    outdec(k);
+    outstr(")\n");
     defbyte();
     outdec(k+k); nl();
 }
@@ -1675,19 +1711,19 @@ pseudoins(long k) {
 /* Print pseudo-op to define a byte */
 void
 defbyte() {
-    ot("FCB ");
+    ot(" FCB ");
 }
 
 /*Print pseudo-op to define storage */
 void
 defstorage() {
-    ot("RMB ");
+    ot(" RMB ");
 }
 
 /* Print pseudo-op to define a word */
 void
 defword() {
-    ot("FDB ");
+    ot(" FDB ");
 }
 
 /* Modify the stack pointer to the new value indicated */
@@ -1698,6 +1734,7 @@ modstk(long newsp) {
 
     k=newsp-Zsp;
     if(k==0) return(newsp);
+    outstr("\n;* modstk(17)\n");
     pseudoins(17); defword();
     outdec(k); nl();
     return (newsp);
@@ -1706,6 +1743,7 @@ modstk(long newsp) {
 /* Double the primary register */
 void
 doublereg() {
+    outstr("\n;* doublereg(18)\n");
     pseudoins(18);
 }
 
@@ -1713,6 +1751,7 @@ doublereg() {
 /*      (results in primary) */
 void
 zadd() {
+    outstr("\n;* zadd(19)\n");
     pseudoins(19);
 }
 
@@ -1720,6 +1759,7 @@ zadd() {
 /*      (results in primary) */
 void
 zsub() {
+    outstr("\n;* zsub(20)\n");
     pseudoins(20);
 }
 
@@ -1727,6 +1767,7 @@ zsub() {
 /*      (results in primary */
 void
 mult() {
+    outstr("\n;* mult(21)\n");
     pseudoins(21);
 }
 
@@ -1734,6 +1775,7 @@ mult() {
 /*      (quotient in primary) */
 void
 myDiv() {
+    outstr("\n;* myDiv(22)\n");
     pseudoins(22);
 }
 
@@ -1742,6 +1784,7 @@ myDiv() {
 /*      (remainder in primary)  */
 void
 zmod() {
+    outstr("\n;* zmod(23)\n");
     pseudoins(23);
 }
 
@@ -1749,6 +1792,7 @@ zmod() {
 /*      (results in primary) */
 void
 zor() {
+    outstr("\n;* zor(24)\n");
     pseudoins(24);
 }
 
@@ -1756,6 +1800,7 @@ zor() {
 /*      (results in primary) */
 void
 zxor() {
+    outstr("\n;* zxor(25)\n");
     pseudoins(25);
 }
 
@@ -1763,6 +1808,7 @@ zxor() {
 /*      (results in primary) */
 void
 zand() {
+    outstr("\n;* zand(26)\n");
     pseudoins(26);
 }
 
@@ -1770,6 +1816,7 @@ zand() {
 /*      times in primary (results in primary) */
 void
 asr() {
+    outstr("\n;* asr(27)\n");
     pseudoins(27);
 }
 
@@ -1777,30 +1824,35 @@ asr() {
 /*      times in primary (results in primary) */
 void
 asl() {
+    outstr("\n;* asl(28)\n");
     pseudoins(28);
 }
 
 /* Form two's complement of primary register */
 void
 neg() {
+    outstr("\n;* neg(29)\n");
     pseudoins(29);
 }
 
 /* Form one's complement of primary register */
 void
 com() {
+    outstr("\n;* com(30)\n");
     pseudoins(30);
 }
 
 /* Increment the primary register by one */
 void
 inc() {
+    outstr("\n;* inc(31)\n");
     pseudoins(31);
 }
 
 /* Decrement the primary register by one */
 void
 dec() {
+    outstr("\n;* dec(32)\n");
     pseudoins(32);
 }
 
@@ -1812,59 +1864,69 @@ dec() {
 /* Test for equal */
 void
 zeq() {
+    outstr("\n;* zeq()33\n");
     pseudoins(33);
 }
 
 /* Test for not equal */
 void
 zne() {
+    outstr("\n;* zne(34)\n");
     pseudoins(34);
 }
 /* Test for less than (signed) */
 void
 zlt() {
+    outstr("\n;* zlt(35)\n");
     pseudoins(35);
 }
 
 /* Test for less than or equal to (signed) */
 void
 zle() {
+    outstr("\n;* zle(36)\n");
     pseudoins(36);
 }
 
 /* Test for greater than (signed) */
 void
 zgt() {
+    outstr("\n;* zgt(37)\n");
     pseudoins(37);
 }
 
 /* Test for greater than or equal to (signed) */
 void
 zge() {
+    outstr("\n;* zge(38)\n");
     pseudoins(38);
 }
 
 /* Test for less than (unsigned) */
 void
 ult() {
+    outstr("\n;* ult(39)\n");
     pseudoins(39);
 }
 
 /* Test for less than or equal to (unsigned) */
 void
 ule() {
+    outstr("\n;* ule(40)\n");
     pseudoins(40);
 }
 
 /* Test for greater than (unsigned) */
 void
 ugt() {
+    outstr("\n;* ugt(41)\n");
     pseudoins(41);
 }
 
 /* Test for greater than or equal to (unsigned) */
 void
 uge() {
+    outstr("\n;* uge(43)\n");
     pseudoins(42);
 }
 

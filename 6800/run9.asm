@@ -2,44 +2,44 @@
 
 *   LAST UPDATE   18-JAN-84
 
-ROM EQU $8000
-WARMS EQU $CD03
+ROM     EQU $8000
+WARMS   EQU $CD03
 
- ORG 0
+        ORG 0
 *
-PC RMB 2 PSEUDO PROGRAM COUNTER
-R1A RMB 1 WORKING 16 BIT
-R1B RMB 1 --REGISTER
-DFLAG RMB 1 DIVIDE ROUTINE FLAG
+ZPC     RMB 2 PSEUDO PROGRAM COUNTER
+R1A     RMB 1 WORKING 16 BIT
+R1B     RMB 1 --REGISTER
+DFLAG   RMB 1 DIVIDE ROUTINE FLAG
 
-RAM EQU *
+RAM     EQU *
 
 ***************************************************
 
  ORG ROM
 
-RUN LDS $CC2B
- CLRA
- TFR A,DP
- LDX #CODE
- BRA NEXT2 START THE INTERPRETATION
+RUN     LDS     $CC2B           ;* ??? Weird stack location
+        CLRA
+        TFR     A,DP
+        LDX     #CODE
+        BRA     NEXT2   START THE INTERPRETATION
 
 **************************************************************
 *
 *  THE HEART OF THE INTERPRETER--- NEXT INSTRUCTION FETCHER.
 *
-BUMP2 LDX PC GET PROG COUNTER
- LEAX 2,X INCR BY 2
- BRA NEXT1 FETCH NEXT INSTRUCTION
+BUMP2   LDX     ZPC      GET PROG COUNTER
+        LEAX    2,X     INCR BY 2
+        BRA     NEXT1   FETCH NEXT INSTRUCTION
 
-NEXT LDX PC
-NEXT1 STD R1A SAVE THE WORK
-NEXT2 LDB ,X+ GET THE PSEUDO-INSTRUCTION
- STX PC SAVE NEW PC
- LEAX JTABLE,PCR POINT TO ROUTINE
- ABX
- LDB R1B
- JMP [0,X] GO EXECUTE THE PSEUDO-INSTR.
+NEXT    LDX     ZPC
+NEXT1   STD     R1A     SAVE THE WORK
+NEXT2   LDB     ,X+     GET THE PSEUDO-INSTRUCTION
+        STX     ZPC      SAVE NEW PC
+        LEAX    JTABLE,PCR POINT TO ROUTINE
+        ABX
+        LDB     R1B
+        JMP     [0,X]   GO EXECUTE THE PSEUDO-INSTR.
 
 **************************************************************
 *                  THE JUMP TABLE                            *
@@ -93,24 +93,24 @@ JTABLE FDB LD1IM #0
 *************************************************************
 *-------------------------
 * #0 LOAD REG WITH IMMED. VALUE
-LD1IM LDD [PC]
- BRA BUMP2
+LD1IM   LDD [ZPC]
+        BRA BUMP2
 
 *-------------------------
 * #1 LOAD STACK ADDRESS + OFFSET INTO REG
 LD1SOFF TFR S,D
- ADDD [PC]
+ ADDD [ZPC]
  BRA BUMP2
 
 *-------------------------
 * #2  LOAD WORD @ ADDRESS
-LD1 LDX PC
+LD1 LDX ZPC
  LDD [,X] GET WORD
  JMP BUMP2
 
 *-------------------------
 * #3  LOAD BYTE @ ADDRESS
-LDB1 LDX PC
+LDB1 LDX ZPC
  LDAB [,X] GET BYTE
  SEX SIGN EXTEND
  JMP BUMP2
@@ -128,12 +128,12 @@ LDB1R LDB [R1A]
 
 *-------------------------
 * #6  STORE WORD @ ADDRESS
-ST1 STD [PC]
+ST1 STD [ZPC]
  JMP BUMP2
 
 *-------------------------
 * #7  STORE BYTE @ ADDRESS
-STB1 STB [PC]
+STB1 STB [ZPC]
  JMP BUMP2
 
 *-------------------------
@@ -149,7 +149,7 @@ STB1SP STB [,S++]
 *-------------------------
 * #10  PUSH WORD ON STACK
 PUSHR1 PSHS D
- LDX PC
+ LDX ZPC
  JMP NEXT2
 
 *-------------------------
@@ -157,12 +157,12 @@ PUSHR1 PSHS D
 EXG1 PULS X
  EXG D,X
  PSHS X
- LDX PC
+ LDX    ZPC
  JMP NEXT2
 
 *-------------------------
 * #12  JUMP TO LABEL
-JMPL LDX [PC]
+JMPL LDX [ZPC]
  JMP NEXT2
 
 *-------------------------
@@ -173,7 +173,7 @@ BRZL ORAA R1B SET FLAGS
 
 *-------------------------
 * #14  CALL TO LABEL
-JSRL LDX PC
+JSRL LDX ZPC
  LEAX 2,X ADJUST RETURN ADDR
  PSHS X PUSH RETURN ADDRESS
  BRA JMPL
@@ -181,7 +181,7 @@ JSRL LDX PC
 *-------------------------
 * #15  CALL TO TOP OF STACK
 JSRSP PULS X
- LDD PC GET RETURN ADDRESS
+ LDD ZPC GET RETURN ADDRESS
  PSHS D SAVE RETURN ADDRESS
  JMP NEXT2
 
@@ -192,7 +192,7 @@ RTSC PULS X GET ADDRESS
 
 *-------------------------
 * #17  MODIFY THE STACK POINTER
-MODSP LDD [PC]
+MODSP LDD [ZPC]
  LEAS D,S
  LDD R1A RESTORE REGISTER
  JMP BUMP2
@@ -468,7 +468,7 @@ TRUE1 CLRA
 
 *-------------------------------------
 * #43  SWITCH TO EXECUTABLE (ASSEMBLY) CODE
-ASMC JMP [PC] EXECUTE CODE
+ASMC JMP [ZPC] EXECUTE CODE
 
 CODE EQU *
 

@@ -1,0 +1,950 @@
+.DHO
+&
+
+
+SMALL-C USER NOTES.                                                 Page  %%%%
+
+
+.DHE
+&
+
+
+SMALL-C USER NOTES.                                                 Page  %%%%
+
+
+Version 2 for FLEX:  (FLEX is a trademark of Technical Systems Consultants)
+                               Serge Stepanoff
+                               5469 Arlene Way
+                             Livermore, CA 94550
+
+INTRODUCTION:
+
+Small-C  is  exactly  what  the  name  implies  --  a subset of the language C
+developed at Bell Labs and best described in the de-facto language  definition
+"The C Programming Language", by Brian Kernighan and Dennis Ritchie, published
+by Prentice-Hall, Inc.  1978.
+
+The   original  Small-C  compiler  was  written  by  Ron  Cain  for  the  8080
+microcomputer on a North Star system.  He was kind and  farsighted  enough  to
+place  it  in  the  public domain via articles in "Dr.  Dobbs Journal".  Since
+then, this  compiler  has  been  adapted  to  several  operating  systems  and
+microcomputers,  including  the 6809.  To this author's knowledge, this is the
+first adaptation for the 6800 micro under TSC's FLEX  operating  system.   The
+project  required  approximately  one  year's  worth  of calendar time, mainly
+because the work on it was carried out in a sporadic and aperiodic basis.
+
+Initial  conversion  attempts  involved compilation directly to assembly level
+code, but this approach was  quickly  dropped  due  to  lack  of  any  16  bit
+arithmetic   in  the  6800  instruction  set  and  general  paucity  of  stack
+operations.  Resultant code was lengthy to say the least -- no wonder the 6809
+came about.  However, in the tradition of PASCAL's P-code and FORTH's threaded
+code,  a  solution  was  found  in  translating  to  a  pseudo-code  and  then
+interpreting this code on a virtual machine.  The penalty in execution time is
+much less than for  a  straight  interpreter  ala  BASIC  --  the  pseudo-code
+interpreter  and  the  run-time  library  occupy less than 2K bytes, and as an
+interesting side note, to execute this pseudo-code on  a  different  operating
+system  or  a  different  micro-  computer  requires  only  the rewrite of the
+interpreter and the run-time library for the target machine.
+
+As  a  historical  note, the initial conversion was not done on a UNIX system,
+but rather on a PDP 11 running RSX-11 operating system and the  DECUS  version
+of  a  C  compiler (another public-domain User Group product) with the Small-C
+code supplied by DECUS (Digital Equipment  Corporation  Users  Society).   The
+ongoing  development of this version of the Small-C compiler is  being carried
+out on a SWTPC 6800 system with dual 8 inch single density floppy drives,  and
+32K of RAM memory.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OPERATION:
+
+The Small-C compiler is invoked by typing CC on the keyboard.  No command line
+arguments are necessary.  A series of questions are then  asked.   After  each
+question, Small-C prints (in paretheses) what the possible responses are.  The
+capitalized response is the one that Small-C will default to if you just press
+RETURN.  The first question is:
+
+     Do you want the c-text to appear (y,N) ?
+
+This  gives  you  the  option  of interleaving the source code into the output
+file.  Response is Y or N (y or n  will  also  serve).   If  Y  is  given,  an
+asterisk will be placed at the start of each input line (to force a comment to
+the 6800 assembler) and the input lines will be interleaved with the  compiler
+generated  pseudo-code output.  If the answer is N (or just RETURN, since N is
+capitalized, and is the default),  only  the  generated  pseudo-code  will  be
+output.   NOTE:  the  TSC  assembler accepts any length labels, both lower and
+upper case, but only the first 6 characters are used and saved in  the  symbol
+table.   Therefore, if you have either functions or labels of the type MODULE1
+and MODULE2, the assembler will generate a multiply defined label error.   So,
+make sure that the first 6 characters are unique.  C'est la vie.....
+
+     Are you compiling the whole program at once (Y,n) ?
+
+This is a convenience (or annoyance) question.  If you type Y (or RETURN), you
+will be able to avoid three more technical questions, which are only needed if
+your  C  program  will  be  fed into Small-C in several separate compilations.
+(Best not to do it.)
+
+If you answer N to the all-at-once question, you'll also be asked:
+
+          Do you want the globals to be defined (y,N) ?
+
+     This  question is primarily a developmental aid between machines.  If the
+     answer is Y, all static symbols will allocate storage within  the  module
+     being compiled.  This is the normal method.  If N (or RETURN), no storage
+     will be allocated, but symbol references will still be made in the normal
+     way.   Essentially,  this question allows the user to specify all or none
+     of the static symbols 'external'.
+
+          Is the output file the first one the assembler will see (y,N) ?
+
+     If it is, Small-C will put out a short prologue that parses  the  command
+     line parameters (if any), sets up the stack, and calls the C program as a
+     subroutine, so that a return to  FLEX  may  be  made  properly  when  the
+     routine is finished.
+
+          Starting number for labels (0) ?
+
+     This lets you supply the first label number generated by the compiler for
+     its internal labels (which will typically be "ccNNN", where  "NNN"  is  a
+     decimal  number).   This  option allows modules to be compiled separately
+     and later appended on the source level without  generating  multi-defined
+
+
+
+
+
+
+
+     labels.  If you just press RETURN, labels will start at "cc000".
+
+Now a question that requires some consideration:
+
+     Should I pause after an error (y,N) ?
+
+If your are doing a long compilation, the sort that you go  off  and  mow  the
+lawn during, you run the risk of having an error message scroll off the screen
+while you're away.  If you answer Y to this question, Small-C  will,  when  it
+finds an error, stop everything it's doing until you tell it to proceed.  That
+way, you are assurred of knowing about ALL the errors that the compiler found.
+FLEX  users  have a third choice -- set the TTYSET screen full Pause parameter
+to YES.  This will stop any tendency to scroll off important messages  at  the
+expense  of  having  to  hit  ESCAPE  every time the screen prints the maximum
+number of lines.
+
+     Output filename ?
+
+This question gets the name of the file to be created.  If you press   RETURN,
+the  output  of the compiler will go to the screen.  Doing this, especially in
+conjunction with having the C source code interleaved with the normal  output,
+is one way of learning what the compiler does with your source.
+
+CAUTION !!!!  If the output file already exists, the compiler will  delete  it
+with  NO warning to you -- which makes for frustration at least when you meant
+to type in FILE.A and instead typed FILE.C.... If this worries you, modify the
+run-time routine "fopen" in the interpreter.
+
+     Input filename ?
+
+This  question  gets  the  name  of  the C source module to use as input.  The
+question will be repeated each time a name is supplied, allowing the  user  to
+create  an  output  file consisting of many separate files.  (It behaves as if
+you had appended them together and submitted only the one file.)  Press RETURN
+to  end  the  compilation  process.  Again CAUTION!!!, if you mistype the file
+name and the file  is  not  found,  the  compiler  will  exit  to  FLEX  after
+appropriate message.  If this  annoys you go fix "fopen".
+
+Here is how you would compile the sample program "WC.C":
+
++++CC          [invoke the compiler]
+
+* * *  greetings and
+
+              salutations  with a note
+
+                  for the sponsor         * * *
+
+Do you want the C-text to appear (y,N) ?  Y   [Why not ?]
+
+Are you compiling the whole program at once (Y,n) ?  Y  [You bet!]
+
+Should I pause after an error (y,N) ?  N    [Live dangerously !]
+
+
+
+
+
+
+
+Output filename: WC.A           [Assembler will get this file]
+
+Input filename: WC.C            [This is the C source file]
+====== main()                   [reports the function being compiled]
+====== nl()
+====== putnum()
+
+Input filename: (press RETURN)  [Tell the compiler we're done]
+
+The compiler will report the number of errors encountered.  If there are  any,
+they  will  also  be  displayed  in  the output pseudo-assembly file where the
+offending line of C will be shown as a comment, with an  error  message  below
+it.
+
+If there were no errors, we may proceed with assembly.
+
++++ASMB WC.A +SY    [Assemble suppressing Symbol table listing]
+
+Note the final assembly address at this point.  If the assembly listing output
+was  supressed  (as  is  quite  often the case for longer assemblies), use the
+supplied utility FSIZE to get the range of addresses occupied  by  the  binary
+file.
+
++++FSIZE WC.BIN
+
+Write down the last address displayed.
+
++++GET CCINT        [Load the interpreter and run-time library]
++++GET WC           [Load the compiled and assembled object code]
++++SAVE WC.CMD 0 XXX 0
+
+The  last  line saves the complete file as an executable command.  Notice that
+the only things that vary are the file name and the final address XXX  (gotten
+from the assembly listing or by using FSIZE).
+
+The program WC (which by the way is a standard Word Count utility) may now  be
+executed by typing:
+
++++WC Filename.Ext
+
+The above program requires a command line parameter (in this case a file name)
+in order to execute.  If this was not the case, then  for  debugging  purposes
+the  SAVE  command  could  have  been  skipped,  and  the C program under test
+executed by typing (in response to system prompt):
+
++++JUMP 0
+
+However, after successfull debug session  the  SAVE  utility  would  still  be
+invoked.
+
+
+
+
+
+
+
+
+
+
+
+ERROR REPORTING:
+
+When  Small-C  detects  an  error  in your program, it prints a message on the
+screen.  For example:
+
+     Line 47, main + 3: missing semicolon
+      int a,b,c     char x
+                    ^
+
+As you can see, you are given a count of how many lines from the beginning  of
+the CURRENT file the error happened, (line 47 in this example).  Next it tells
+you what the most recent function name was ("main" in this example), and  then
+how  many  lines into the function (+ 3) the error occurred.  Once the message
+has been printed, the compiler continues its work.  If you answered "Y" to the
+Should-I-pause  question,  the  compiler will come to a stop after each error,
+and wait until you tell it to proceed.  When it stops, it will ask you
+
+     Continue (Y,n,g) ?
+
+If you answer Y (or just press RETURN), Small-C  will  resume  compiling  your
+program.   If  you  answer  N,  Small-C will drop everything and return you to
+FLEX.  If you answer G (for  "go!"),  Small-C  will  continue  compiling  your
+program, but will no longer stop after each error.  (it will report errors and
+keep compiling.)
+
+It should be noted that an error on one line may cause a whole series of error
+messages for the same and subsequent lines of code.  The moral is
+ -- examine the first error carefully, and use the "go" option if warranted.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+THE RUN-TIME LIBRARY AND ITS FUNCTIONS:
+
+The  following  is a brief description of the standard functions provided with
+this version of the Small-C compiler.  They are  found  (along  with  run-time
+interpreter) in the file CCINT.  Here's what they are supposed to do:
+
+
+   c = getchar(c);
+
+Reads  a  character  from  the  console keyboard, echoes it to the screen, and
+returns it.  If the character  is  a  carriage-return,  a  line-feed  is  also
+printed.   TTYSET  parameter  settings  are  honored.   If  the  character  is
+control-Z, -1 (end-of-file) is returned instead.
+
+
+   c = putchar(c);
+
+Writes  the  passed  character  to  the  console.   If  the  character  is   a
+carriage-return,  a  line-feed is also written.  Putchar returns the character
+passed to it.
+
+
+   gets(buff);
+       char *buff;
+
+Reads one line from the console into the supplied character array buffer.  The
+usual FLEX character/line  editing  features  are  supported.   A  null  ('0')
+character  is  appended  to  the  end  of the string.  The supplied buffer had
+better be long enough to hold the input string.
+
+
+   puts(string);
+       char *string;
+
+Writes  a  string  to  the  console.   Stops writing when it encounters a null
+character, which is assumed to terminate  the  string.   (The  null  character
+itself  is  not  written.)  No cariage-return or line-feed is written unless a
+new-line character is found.  A limited subset of backslash character sequence
+is  supported,  including:  b,  f,  n,  \, xDD (DD=hex digits), OOO (OOO=octal
+digits) -- a sort of poor man's "printf" function.  Yes it is  interpreted  at
+run-time.
+
+
+   ptr = fopen(name, mode);
+       int ptr;
+
+Opens the named file for reading or writing.   Both  name  and  mode  must  be
+strings,  or  pointers  to  characters.   If the mode is "r", name is open for
+reading, otherwise if "w" it is open for writing  and  previous  contents  are
+overwritten  (no  warning of file's existance is given).  Both "r" and "w" may
+be appended with "u", the "Uncompress" flag, to facilitate reading  binary  or
+any  other  non-text  files.   A pointer to FCB is returned for later use with
+getc, putc, and fclose.  If the open fails, an exit to FLEX  is  made  and  an
+
+
+
+
+
+
+
+appropriate message issued.  Currently, no more than four files may be open at
+one time;  if this is not enough for  you,  modify  the  parameter  NFILES  in
+CCINT.TXT and reassemble it.
+
+
+   fclose(ptr);
+
+Flushes  any unwritten output to disk, and closes file.  It returns to FLEX if
+the close fails.  Please note that you should explicitly close each file  that
+was opened.
+
+
+   c = getc(ptr);
+
+Reads  and  returns  the next character from the file.  Ptr is the FCB pointer
+returned from fopen().  When the physical end-of-file is reached getc  returns
+a -1.  A read error returns control to FLEX.
+
+
+   putc(c, ptr);
+
+Writes  a  character to file.  If a write error occurs, control is returned to
+FLEX.
+
+
+   isalpha(c);
+       char c;
+
+Returns  TRUE  if character passed to it is an alpha (i.e.  a-z, A-Z, or '_'),
+FALSE if it isn't.
+
+
+   isdigit(c);
+       char c;
+
+Returns  TRUE  if  the  character passed to it is a numeric digit (0-9), FALSE
+otherwise.
+
+
+   isalnum(c);
+
+Returns TRUE if the character is alpha or digit (numeric), else FALSE.
+
+
+   islower(c);
+
+TRUE if lower case alpha (a-z), FALSE otherwise.
+
+
+   isupper(c);
+
+TRUE if upper case alpha (A-Z), FALSE otherwise.
+
+
+
+
+
+
+
+
+   isspace(c);
+
+TRUE if c is a  "white"  space  character  (space,  tab,  carriage-return,  or
+line-feed), FALSE otherwise.
+
+
+   toupper(c);
+
+Returns upper case of c if c is lower case alpha, otherwise returns c.
+
+
+   tolower(c);
+
+Returns lower case of c if c is upper case alpha, otherwise returns c.
+
+
+   strclr(s,n);
+       char *s;   int n;
+
+Clears the string of n bytes in length pointed to by s to all NULL's.
+
+
+   strlen(s);
+       char *s;
+
+Returns the length of the string pointed to by s.
+
+
+   strcpy(s1, s2);
+
+Copies  string s2 into s1.  No check for whether s1 is large enough to hold s2
+is made.
+
+
+   strcat(s1, s2);
+
+Concatenates s2 (adds onto tail of) to s1.
+
+
+   strcmp(s1, s2);
+
+Compares string s1 with string s2 until there is a difference between the two,
+or either string runs out.  The difference between the last two characters (s1
+- s2) is then returned.  Case is not ignored so "foo" and "Foo" are not equal.
+Also string "aaaaa" is smaller than the string "bb".
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ASSEMBLY LANGUAGE INTERFACE:
+
+Interfacing  to  assembly  language  is  quite easy.  The "#asm" and "#endasm"
+constructs allow assembly language to be placed inside C programs.   Since  it
+is  considered by the compiler to be a single statement, it may appear in such
+forms as:
+
+
+       while(1) #asm .....  #endasm
+                 or
+       if(expression)  #asm .....  #endasm    else .....
+
+Due to the workings of the preprocessor (which  must  be  suppressed  by  this
+construct),   the   pseudo-op   "#asm"  must  be  the  last  item  before  the
+carriage-return on the end of the line (since the text between  #asm  and  the
+<CR>  is  thrown  away),  and  the  #endasm pseudo-op must appear on a line by
+itself (since everything after #endasm is thrown away).  Since the  parser  is
+completely  free-format outside of these exceptions, the expected format is as
+follows:
+
+       if (expression) #asm
+             ......
+             ......
+             #endasm
+       else statement;
+
+Note that a semicolon is not required after the  #endasm,  since  the  end  of
+context is obvious to the compiler.
+
+Unlike the rest of Small-C compilers, the assembly language user of  this  one
+must  also switch in and out of interpreted mode, before writing pure assembly
+code.  This is accomplished as follows:
+
+  .....  #asm
+    FCB  86      [Switch to assembly code]
+      ....
+      ....
+      ....
+
+    JSR RTSC     [If simply in line sequence of assembly language
+                   statements]
+
+      or
+
+    JMP RTSC     [If return from an assembly language function]
+
+    #endasm
+
+The  label  RTSC  is  a special global symbol for the routine that returns the
+control to the interpreter.
+
+Assembly  language  code  within the "#asm .... #endasm" context has access to
+all global symbols and functions by name (watch the  lower  case  convention).
+
+
+
+
+
+
+
+It is up to the programmer to know the data type of the symbol (whether "char"
+or "int" -- implies a byte acess or a word access).
+
+External assembly language routines (functions) invoked by function calls from
+the C code have access to all registers and do not have to restore them  prior
+to exit.  They may push items on the stack as well but must remove (pull) them
+off before exit.  It is the responsibility of the calling  program  to  remove
+arguments  from the stack after a function call.  This must not be done by the
+function itself.  There is no limit to the number of items  the  function  may
+push  on  the  stack,  providing  it   removes  them  prior to exiting.  Since
+parameters are passed by value, the called function may modify them.   If  the
+function  is  to  return a value, it must do so by loading it into the A and B
+registers (MSB and LSB respectively) prior to exiting.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+STACK USAGE:
+
+The stack is used extensively by the compiler.  Function arguments are  pushed
+on  the  stack  as  they  are encountered between the parentheses (or in other
+words left to right) which is the opposite of standard C.  This means routines
+using  a  variable number of arguments -- beware !!.  It is worth pointing out
+that the local declarations allocate only as much room  on  the  stack  as  is
+necessary,  including  an  odd number of bytes for char variables, whereas the
+function call arguments always use two  bytes  a  piece.   In  the  event  the
+argument  was type "char" (8 bits).  the most significant byte of the two-byte
+value is a sign extension of the lower byte.
+
+
+
+
+
+A PARTING NOTE:
+
+This is the first version of 6800 Small-C compiler released to the public.  It
+is highly likely that some insidious bugs are present.  Some useful utilities,
+notably "printf" and "fprintf" are not yet implemented.  The distribution disk
+contains   some  C  programs  from  the  BDS  c  Users  Group  and  the  DECUS
+distribution.  If you convert them to the Small-C  subset,  send  the  listing
+(preferably  on an 8 inch diskette) back to the author and it will be included
+in the future distributions, with due credits of course.   A user group  would
+be a nice idea......
+
+DiskCollection\Disks\FLEX9\SMALLC09.DSK
+
+
+*main(carg, varg)
+
+;* ====== main()
+main 
+*int  carg;
+*char *varg[];
+*{
+*    /* Let's cheat, @ thru DEL get 0110 knocked off */
+*    /* so \@ (x40) becomes NULL (x00), A (x41) or a (x61) becomes ^A (x01), etc
+* */
+*    while (--carg > 0) {
+cc4 
+
+;* getloc(1)
+;* pseudoins(1)
+	 FCB 2
+	 FDB 4
+
+;* zpush(10)
+;* pseudoins(10)
+	 FCB 20
+
+;* indirect(4)
+;* pseudoins(4)
+	 FCB 8
+
+;* dec(32)
+;* pseudoins(32)
+	 FCB 64
+
+;* zpop()
+
+;* putstk(8)
+;* pseudoins(8)
+	 FCB 16
+
+;* zpush(10)
+;* pseudoins(10)
+	 FCB 20
+
+;* imediate(0)
+;* pseudoins(0)
+	 FCB 0
+	 FDB 0
+
+;* zpop()
+
+;* zgt(37)
+;* pseudoins(37)
+	 FCB 74
+
+;* testjump(13)
+;* pseudoins(13)
+	 FCB 26
+	 FDB cc5
+*        ++varg;
+
+;* getloc(1)
+;* pseudoins(1)
+	 FCB 2
+	 FDB 2
+
+;* zpush(10)
+;* pseudoins(10)
+	 FCB 20
+
+;* indirect(4)
+;* pseudoins(4)
+	 FCB 8
+
+;* inc(31)
+;* pseudoins(31)
+	 FCB 62
+
+;* zpop()
+
+;* putstk(8)
+;* pseudoins(8)
+	 FCB 16
+*        print(*varg);           /* print the 'word' */
+
+;* getmem(2)
+;* pseudoins(2)
+	 FCB 4
+	 FDB print
+
+;* zpush(10)
+;* pseudoins(10)
+	 FCB 20
+
+;* getloc(1)
+;* pseudoins(1)
+	 FCB 2
+	 FDB 4
+
+;* indirect(4)
+;* pseudoins(4)
+	 FCB 8
+
+;* indirect(4)
+;* pseudoins(4)
+	 FCB 8
+
+;* swapstk(11)
+;* pseudoins(11)
+	 FCB 22
+
+;* zpush(10)
+;* pseudoins(10)
+	 FCB 20
+
+;* callstk(15)
+;* pseudoins(15)
+	 FCB 30
+
+;* modstk(17)
+;* pseudoins(17)
+	 FCB 34
+	 FDB 2
+*        putchar(' ');
+
+;* getmem(2)
+;* pseudoins(2)
+	 FCB 4
+	 FDB print
+
+;* zpush(10)
+;* pseudoins(10)
+	 FCB 20
+
+;* imediate(0)
+;* pseudoins(0)
+	 FCB 0
+	 FDB 32
+
+;* swapstk(11)
+;* pseudoins(11)
+	 FCB 22
+
+;* zpush(10)
+;* pseudoins(10)
+	 FCB 20
+
+;* callstk(15)
+;* pseudoins(15)
+	 FCB 30
+
+;* modstk(17)
+;* pseudoins(17)
+	 FCB 34
+	 FDB 2
+*    }
+
+;* jump(15)
+;* pseudoins(12)
+	 FCB 24
+	 FDB cc4
+cc5 
+
+;* modstk(17)
+;* pseudoins(17)
+	 FCB 34
+	 FDB 8
+*    /* nl(); */
+*}
+
+;* zret(16)
+;* pseudoins(16)
+	 FCB 32
+*/*
+*-*- mode: c-mode; -*-
+**/
+
+================================================================================
+*main(carg, varg)
+
+;* ====== main()
+main 
+*int  carg;
+*char *varg[];
+*{
+*    /* Let's cheat, @ thru DEL get 0110 knocked off */
+*    /* so \@ (x40) becomes NULL (x00), A (x41) or a (x61) becomes ^A (x01), etc
+* */
+*    while (--carg > 0) {
+cc4 
+	 FCB 2
+	 FDB 4
+	 FCB 20
+	 FCB 8
+	 FCB 64
+	 FCB 16
+	 FCB 20
+	 FCB 0
+	 FDB 0
+	 FCB 74
+	 FCB 26
+	 FDB cc5
+*        ++varg;
+	 FCB 2
+	 FDB 2
+	 FCB 20
+	 FCB 8
+	 FCB 62
+	 FCB 16
+*        print(*varg);           /* print the 'word' */
+	 FCB 4
+	 FDB print
+	 FCB 20
+	 FCB 2
+	 FDB 4
+	 FCB 8
+	 FCB 8
+	 FCB 22
+	 FCB 20
+	 FCB 30
+	 FCB 34
+	 FDB 2
+*        putchar(' ');
+	 FCB 4
+	 FDB print
+	 FCB 20
+	 FCB 0
+	 FDB 32
+	 FCB 22
+	 FCB 20
+	 FCB 30
+	 FCB 34
+	 FDB 2
+*    }
+	 FCB 24
+	 FDB cc4
+cc5 
+	 FCB 34
+	 FDB 8
+*    /* nl(); */
+*}
+	 FCB 32
+*/*
+*-*- mode: c-mode; -*-
+**/
+
+================================================================================
+
+;* Better main (from Flex 09 SmallC)
+*main(argc, argv)
+main 
+*int  argc;
+*char *argv[];
+*{
+*    /* Let's cheat, @ thru DEL get 0110 knocked off */
+*    /* so \@ (x40) becomes NULL (x00), A (x41) or a (x61) becomes ^A (x01), etc
+* */
+*    while (--argc > 0) {
+cc6 
+ 	FCB 	2		;* LD1SOFF
+ 	FDB 	4		;*
+ 	FCB 	20		;* PUSHR1
+ 	FCB 	8		;* LD1R
+ 	FCB 	64		;* DECR
+ 	FCB 	16		;* RTSC
+ 	FCB 	20		;*
+ 	FCB 	0		;*
+ 	FDB 	0		;*
+ 	FCB 	74		;*
+ 	FCB 	26		;*
+ 	FDB 	cc7		;*
+*        ++argv;
+ 	FCB 	2		;*
+ 	FDB 	2		;*
+ 	FCB 	20		;*
+ 	FCB 	8		;*
+ 	FCB 	62		;*
+ 	FCB 	16		;*
+*        print(*argv);           /* print the 'word' */
+ 	FCB 	2		;*
+ 	FDB 	2		;*
+ 	FCB 	8		;*
+ 	FCB 	10		;*
+ 	FCB 	20		;*
+ 	FCB 	28		;*
+ 	FDB 	print		;*
+ 	FCB 	34		;*
+ 	FDB 	2		;*
+*        putchar(' ');
+ 	FCB 	0		;*
+ 	FDB 	32		;*
+ 	FCB 	20		;*
+ 	FCB 	28		;*
+ 	FDB 	putchar		;*
+ 	FCB 	34		;*
+ 	FDB 	2		;*
+*    }
+ 	FCB 	24		;*
+ 	FDB 	cc6		;*
+cc7 
+*    /* nl(); */
+*}
+ 	FCB 	32		;*
+*/*
+*-*- mode: c-mode; -*-
+**/
+ ORG RAM
+ END RUN
+
+* --- End of Compilation ---
