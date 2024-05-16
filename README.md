@@ -57,6 +57,141 @@ smallc.c
 
 2023/02/04 - I've got the compiler hacked together and mostly working. What I've found is that the small c compiler outputs pseudo code and that the run9 (6809) and run1 (6801) code are the asm source to an interpreter. Assemble the code together and you have a program. This small C compiler is still quite limitted but may be useful and as one of the notes files points out C is easier to write than asm code. Anyway I'm posting this mess so I don't lose it and so other might get ideas. Just note that this is terrible C code. It was meant to use the very limmited small c compiler to compile itself. I'm in the process of making it work under Linux as a cross compiler for any of the Motorola preocessors. It will no longer compiler itself.
 
+## Understanding so far (Operation)
+
+Okay I'm getting a better grasp of the Small C Byte compiler. It appears
+The Small C compiler sees the CPU as a virtual CPU with a 16 bit register,
+A 16 bit wide stack. There are about 42 pseudo-op codes. You write the
+libraries and 'micro code' in the assembly language of your choice. If you
+include the run9.asm (6809) at the start of your C code the compiler will
+include that into the output. The run9.asm contains the init code, the
+interpreter, the 'micro-code' and the point where the interpreted code
+starts. The compiler then adds the byte codes and FCB, FDB, etc. So one
+nice assembly file. You then assemble the code.
+
+The (byte code) interpreter treats the bytes as assembly language and
+looks up the byte code in a jump table (at least for the 68xx processors).
+And runs that code, the returns to the interpreter when done. Here I've
+removed the asm library (printf, puts, gets etc.) and the interpreter
+except for the jump table. After the jump table would be the 'micro-code'
+followed bu the C byte code (I've trimmed it to just the main() section).
+
+```
+:* Jump table from interpreter code, second #xx is the Small C vop-code
+JTABLE  FDB     LD1IM           ;*  #0  #0
+        FDB     LD1SOFF         ;*  #1  #2
+        FDB     LD1             ;*  #2  #4
+        FDB     LDB1            ;*  #3  #6
+        FDB     LD1R            ;*  #4  #8
+        FDB     LDB1R           ;*  #5  #10
+        FDB     ST1             ;*  #6  #12
+        FDB     STB1            ;*  #7  #14
+        FDB     ST1SP           ;*  #8  #16
+        FDB     STB1SP          ;*  #9  #18
+        FDB     PUSHR1          ;*  #10 #20
+        FDB     EXG1            ;*  #11 #22
+        FDB     JMPL            ;*  #12 #24
+        FDB     BRZL            ;*  #13 #26
+        FDB     JSRL            ;*  #14 #28
+        FDB     JSRSP           ;*  #15 #30
+        FDB     RTSC            ;*  #16 #32
+        FDB     MODSP           ;*  #17 #34
+        FDB     DBL1            ;*  #18 #36
+        FDB     ADDS            ;*  #19 #38
+        FDB     SUBFST          ;*  #20 #40
+        FDB     MUL1            ;*  #21 #42
+        FDB     DIV1            ;*  #22 #44
+        FDB     MOD             ;*  #23 #46
+        FDB     ORS             ;*  #24 #48
+        FDB     XORS            ;*  #25 #50
+        FDB     ANDS            ;*  #26 #52
+        FDB     ASRS            ;*  #27 #54
+        FDB     ASLS            ;*  #28 #56
+        FDB     NEGR            ;*  #29 #58
+        FDB     NOTR            ;*  #30 #60
+        FDB     INCR            ;*  #31 #62
+        FDB     DECR            ;*  #32 #64
+        FDB     ZEQ             ;*  #33 #66
+        FDB     ZNE             ;*  #34 #68
+        FDB     ZLT             ;*  #35 #70
+        FDB     ZLE             ;*  #36 #72
+        FDB     ZGT             ;*  #37 #74
+        FDB     ZGE             ;*  #38 #76
+        FDB     ULT             ;*  #39 #78
+        FDB     ULE             ;*  #40 #80
+        FDB     UGT             ;*  #41 #82
+        FDB     UGE             ;*  #42 #84
+        FDB     ASMC            ;*  #43 #86
+```
+
+Here's just the main() part compiled under Flex and Small C for the 6809:
+
+```
+*main(argc, argv)
+main 
+*int  argc;
+*char *argv[];
+*{
+*    /* Let's cheat, @ thru DEL get 0110 knocked off */
+*    /* so \@ (x40) becomes NULL (x00), A (x41) or a (x61) becomes ^A (x01), etc
+* */
+*    while (--argc > 0) {
+cc6 
+ 	FCB 	2		;* LD1SOFF
+ 	FDB 	4		;*
+ 	FCB 	20		;* PUSHR1
+ 	FCB 	8		;* LD1R
+ 	FCB 	64		;* DECR
+ 	FCB 	16		;* RTSC
+ 	FCB 	20		;*
+ 	FCB 	0		;*
+ 	FDB 	0		;*
+ 	FCB 	74		;*
+ 	FCB 	26		;*
+ 	FDB 	cc7		;*
+*        ++argv;
+ 	FCB 	2		;*
+ 	FDB 	2		;*
+ 	FCB 	20		;*
+ 	FCB 	8		;*
+ 	FCB 	62		;*
+ 	FCB 	16		;*
+*        print(*argv);           /* print the 'word' */
+ 	FCB 	2		;*
+ 	FDB 	2		;*
+ 	FCB 	8		;*
+ 	FCB 	10		;*
+ 	FCB 	20		;*
+ 	FCB 	28		;*
+ 	FDB 	print		;*
+ 	FCB 	34		;*
+ 	FDB 	2		;*
+*        putchar(' ');
+ 	FCB 	0		;*
+ 	FDB 	32		;*
+ 	FCB 	20		;*
+ 	FCB 	28		;*
+ 	FDB 	putchar		;*
+ 	FCB 	34		;*
+ 	FDB 	2		;*
+*    }
+ 	FCB 	24		;*
+ 	FDB 	cc6		;*
+cc7 
+*    /* nl(); */
+*}
+ 	FCB 	32		;*
+*/*
+*-*- mode: c-mode; -*-
+**/
+ ORG RAM
+ END RUN
+
+* --- End of Compilation ---
+```
+
+Currently the Small C compiler I have under Linux has a few issues I need to work on.
+
 # Useful links:
 
 http://www.pennelynn.com/Documents/CUJ/HTML/90HTML/199000DA.HTM A Survey Of CUG C Compilers by Victor Volkman
