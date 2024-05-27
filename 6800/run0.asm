@@ -35,14 +35,25 @@ XTEMP   RMB     2
 ATEMP   RMB     1
 BTEMP   RMB     1
 
-cc1     rmb     2
-
 ;***************************************************
 
         ORG     ROM
 
 RUN     LDS     #STACK          ;* @FIXME: Not sure 0 page is a good idea yet
         STS     STEMP
+        ;; 
+        clra
+        clrb
+        staa    zPC
+        staa    zPC+1
+        staa    zREG
+        staa    zREG+1
+        staa    DFLAG
+        staa    STEMP
+        staa    STEMP+1
+        staa    XTEMP
+        staa    XTEMP+1
+        ;; 
         LDX     #CODE
         BRA     NEXT2           ;* START THE INTERPRETATION
 
@@ -67,6 +78,7 @@ NEXT2   LDAB    0,X             ;* GET THE PSEUDO-INSTRUCTION
 ;* ABX -> X <- X + B
 ;*
         stx     XTEMP           ;* Save X to XTEMP or XHI
+        clra
         addb    XTEMP+1         ;* add X lo to B
         adca    XTEMP           ;* add the X hi + CC to A
         staa    XTEMP           ;* retore X
