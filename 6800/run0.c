@@ -1,14 +1,10 @@
+/* Local Variables: */
+/* mode: asm        */
+/* End:             */
+#asm
 	MACEXP  on
 
         CPU     6800            ; That's what asl has
-;*/* Small C Demo Program */
-;*/*
-;*#include "run9.c"               /* Must use double quotes not <> * /
-;*#include "io9.c"
-;**/
-;/* Local Variables: */
-;/* mode: asm        */
-;/* End:             */
 
 ;;;
 ;;; WIP, need to convert this tfrom 6801 to 6800 @FIXME: replace 6801 op codes
@@ -35,14 +31,25 @@ XTEMP   RMB     2
 ATEMP   RMB     1
 BTEMP   RMB     1
 
-cc1     rmb     2
-
 ;***************************************************
 
         ORG     ROM
 
 RUN     LDS     #STACK          ;* @FIXME: Not sure 0 page is a good idea yet
         STS     STEMP
+        ;; 
+        clra
+        clrb
+        staa    zPC
+        staa    zPC+1
+        staa    zREG
+        staa    zREG+1
+        staa    DFLAG
+        staa    STEMP
+        staa    STEMP+1
+        staa    XTEMP
+        staa    XTEMP+1
+        ;; 
         LDX     #CODE
         BRA     NEXT2           ;* START THE INTERPRETATION
 
@@ -59,23 +66,24 @@ NEXT    LDX     zPC
 ;EXT1   std     zREG            ;* SAVE THE WORK
 NEXT1   staa    zREG            ;* SAVE THE WORK
         stab    zREG+1          ;*
-NEXT2   LDAB    0,X             ;* GET THE PSEUDO-INSTRUCTION
-        INX                     ;* (B CONTAINS A TABLE OFFSET)
+NEXT2   LDAB    0,X             ;* GET THE PSEUDO-INSTRUCTION (B CONTAINS A TABLE OFFSET)
+        INX                     ;* INC zPC
         STX     zPC             ;* SAVE NEW zPC
         LDX     #JTABLE         ;* POINT TO ROUTINE
 ;*
 ;* ABX -> X <- X + B
 ;*
-        stx     XTEMP           ;* Save X to XTEMP or XHI
-        addb    XTEMP+1         ;* add X lo to B
-        adca    XTEMP           ;* add the X hi + CC to A
-        staa    XTEMP           ;* retore X
-        stab    XTEMP+1         ;* retore X
-        ldx     XTEMP           ;*
+        stx     XTEMP           ;* Save X to XTEMP
+        clra
+        addb    XTEMP+1         ;* add X lo to B -> B
+        adca    XTEMP           ;* add the X hi + CC to A ->
+        staa    XTEMP           ;* A -> XTEMP
+        stab    XTEMP+1         ;* B -> XTEMP+1
+        ldx     XTEMP           ;* retore new X (JTable+B offset)
 ;*
-        LDAB    zREG+1
+        LDAB    zREG+1          ;* What does B hold?
         LDX     0,X
-        JMP     0,X             ;* SAVE THE WORK
+        JMP     0,X             ;* Jump to function
 
 ;**************************************************************
 ;*                  THE JUMP TABLE                            *
@@ -224,7 +232,7 @@ STB1SP  TSX
 
 ;*-------------------------
 ;* #10  PUSH WORD ON STACK
-PUSHR1  PSHB
+PUSHR1  PSHB                    ;* A & B on the stack
         PSHA
         LDX     zPC
         JMP     NEXT2
@@ -269,14 +277,14 @@ JSRL    LDX     zPC
         INX                     ;* ADJUST RETURN
         INX                     ;* -- ADDRESS
 ;       PSHX                    ;* PUSH RETURN ADDRESS @FIXME: Need a proper push
-        staa    ATEMP
-        stab    BTEMP
-        stx     XTEMP
-        ldaa    XTEMP
-        ldab    XTEMP+1
-        pshb
+        staa    ATEMP           ;* Save D [A:B]
+        stab    BTEMP           ;* 
+        stx     XTEMP           ;* Copy X to XTEMP
+        ldaa    XTEMP           ;* Load XTEMP into D [A:B]
+        ldab    XTEMP+1         ;* 
+        pshb                    ;* Push X [A:B] onto the stack
         psha
-        ldaa    ATEMP
+        ldaa    ATEMP           ;* Restore D [A:B]
         ldab    BTEMP
 ;       PSHX                    ;* PUSH RETURN ADDRESS @FIXME: Need a proper push
         BRA     JMPL
@@ -296,7 +304,7 @@ JSRSP   staa    ATEMP           ;* Save A
 ;                               ;*
 ;       LDD     zPC             ;* GET RETURN ADDRESS
         ldaa    zPC             ;* GET RETURN ADDRESS
-        ldab    zPC+1           ;* GET RETURN ADDRESS
+        ldab    zPC+1           ;* 
         PSHB                    ;* SAVE RETURN ADDRESS
         PSHA
         JMP     NEXT2
@@ -652,7 +660,15 @@ TRUE1   CLRA
 ASMC    LDX     zPC             ;* POINT TO CODE
         JMP     0,X             ;* GO EXECUTE IT
 
-WARMS   BRA     *
+WARMS   NOP                     ;* Makes it easier to pop a SWI in here
+        BRA     WARMS
+
+;* -[ Libraries ]---------------------------------------------------------------
+xnl      ldaa    #13             ;* ^M
+        staa    $F001
+        ;;
+        ;; Okay how are we called?
 
 CODE    EQU     *
 ;* byte codes follow
+#endasm
