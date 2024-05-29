@@ -324,7 +324,7 @@ void
 doinclude() {
     blanks();                   /* skip over to name */
     toconsole();
-    outstr("#include ");
+    outstr(";* #include ");
     outstr((char *) line+lidx);
     nl();
 
@@ -353,7 +353,7 @@ doinclude() {
 void
 endinclude() {
         toconsole();
-        outstr("#end include"); nl();
+        outstr(";* #end include"); nl();
         tofile();
 
         input2  = 0;
@@ -1698,14 +1698,65 @@ testjump(long label) {
     nl();
 }
 
+char *JTable[] = {
+    "LD1IM",
+    "LD1SOFF",
+    "LD1",
+    "LDB1",
+    "LD1R",
+    "LDB1R",
+    "ST1",
+    "STB1",
+    "ST1SP",
+    "STB1SP",
+    "PUSHR1",
+    "EXG1",
+    "JMPL",
+    "BRZL",
+    "JSRL",
+    "JSRSP",
+    "RTSC",
+    "MODSP",
+    "DBL1",
+    "ADDS",
+    "SUBFST",
+    "MUL1",
+    "DIV1",
+    "MOD",
+    "ORS",
+    "XORS",
+    "ANDS",
+    "ASRS",
+    "ASLS",
+    "NEGR",
+    "NOTR",
+    "INCR",
+    "DECR",
+    "ZEQ",
+    "ZNE",
+    "ZLT",
+    "ZLE",
+    "ZGT",
+    "ZGE",
+    "ULT",
+    "ULE",
+    "UGT",
+    "UGE",
+    "ASMC"
+};
+
 /* Print a pseudo-instruction for interpreter  */
 void
 pseudoins(long k) {
+    /*
     outstr(";* pseudoins("); // njc
     outdec(k);
     outstr(")\n");
+    */
     defbyte();
-    outdec(k+k); nl();
+    outdec(k+k);
+    ot(";* "); outstr(JTable[k]);
+    nl();
 }
 
 /* Print pseudo-op to define a byte */

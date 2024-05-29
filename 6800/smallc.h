@@ -25,6 +25,7 @@ extern struct _IO_FILE *stderr;
 #ifndef NULL
 #define NULL	0
 #endif
+
 #ifdef __linux
 #define EOL 	'\n'            // \n = ^J 0x0A
 #else
@@ -33,8 +34,8 @@ extern struct _IO_FILE *stderr;
 
 #define TAB	0x09
 #define CLS	0x0C            // ^L
-#define SQUOTE	0x27
-#define DQUOTE	0x22
+#define SQUOTE	0x27            // 'single'
+#define DQUOTE	0x22            // "double"
 
 /*      UNIX definitions (if not stand-alone)   */
 
@@ -43,7 +44,7 @@ extern struct _IO_FILE *stderr;
 
 /*      Define the symbol table parameters      */
 
-#define SYMSIZ   14
+#define SYMSIZ   14             /* Tied to symbol table entry and name size (below)  */
 #define SYMTBSZ  5040
 #define NUMGLBS  300
 #define STARTGLB symtab
@@ -63,6 +64,7 @@ extern struct _IO_FILE *stderr;
 
 #define NAMESIZE 9
 #define NAMEMAX  8
+
 /*      Define possible entries for "ident"     */
 
 #define VARIABLE 1
@@ -100,7 +102,7 @@ extern struct _IO_FILE *stderr;
 
 /*      Define the input line                   */
 
-#define LINESIZE 80
+#define LINESIZE 160
 #define LINEMAX LINESIZE-1
 #define MPMAX   LINEMAX
 
