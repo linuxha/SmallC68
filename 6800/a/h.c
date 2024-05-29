@@ -1,9 +1,6 @@
-*/* C Demo Program */
-*/* #include <run9.c>
-*#include <io9.c> */
-*#include runN.c
-#include runN.c
-*#asm
+;* /* C Demo Program */
+;* /* #include runN.c */
+;* #asm
  NAM SMALL-C RUN PACK FOR 6809
 *   LAST UPDATE   18-JAN-84
 ROM EQU $8000
@@ -399,17 +396,16 @@ CODE EQU *
  FDB main
  FCB 86
  JMP WARMS
-*/* END of run-time package */
-#end include
-*#include ioN.c
-#include ioN.c
-*/* Small-C Input-Output Library for FLEX9 */
-*putchar(c)
+;* /* END of run-time package */
+;* /* #include ioN.c */
+;* /* Small-C Input-Output Library for FLEX9 */
+;* putchar(c)
 
-====== putchar()putchar 
-*         char c;
-*{
-*#asm
+;* ====== putchar()
+putchar 
+;*          char c;
+;* {
+;* #asm
  FCB 86
  LDA 3,S
  CMPA #13
@@ -419,13 +415,14 @@ CODE EQU *
 :1 JSR $CD18
 :2 LDD 2,S
  JMP RTSC
-*}
+;* }
 	FCB 32
-*getchar()
+;* getchar()
 
-====== getchar()getchar 
-*{
-*#asm
+;* ====== getchar()
+getchar 
+;* {
+;* #asm
  FCB 86
  JSR $CD15
  CMPA #13
@@ -435,31 +432,32 @@ CODE EQU *
 :1 TFR A,B
  CLRA
  JMP RTSC
-*}
+;* }
 	FCB 32
-*puts(s)
+;* puts(s)
 
-====== putchar()puts 
-*         char s[];
-*{
-*         int k;
+;* ====== putchar()
+puts 
+;*          char s[];
+;* {
+;*          int k;
 	FCB 34
 	FDB -2
-*         k=0;
+;*          k=0;
 	FCB 2
 	FDB 65536
 	FCB 20
 	FCB 0
 	FDB 0
 	FCB 16
-*         while(putchar(s[k++]));
+;*          while(putchar(s[k++]));
 cc2 
 	FCB 4
 	FDB putchar
 	FCB 20
 	FCB 2
 	FDB 6
-Line 39, putchar + 5: can't subscript
+Line 532, putchar + 5: can't subscript
  while(putchar(s[k++]));
                  ^
 	FCB 20
@@ -484,20 +482,20 @@ cc2
 cc3 
 	FCB 34
 	FDB 4
-*}
+;* }
 	FCB 34
 	FDB 2
 	FCB 32
-#end include
-*main() {
+;* main() {
 
-====== main()main 
-*        nl();
+;* ====== main()
+main 
+;*         nl();
 	FCB 4
 	FDB nl
 	FCB 20
 	FCB 30
-*        puts ("Hello World");
+;*         puts ("Hello World");
 	FCB 4
 	FDB putchar
 	FCB 20
@@ -508,19 +506,20 @@ cc3
 	FCB 30
 	FCB 34
 	FDB 2
-*        nl();
+;*         nl();
 	FCB 4
 	FDB nl
 	FCB 20
 	FCB 30
-*}
+;* }
 	FCB 34
 	FDB 12
 	FCB 32
-*nl() {
+;* nl() {
 
-====== nl()nl 
-*        putchar (13);
+;* ====== nl()
+nl 
+;*         putchar (13);
 	FCB 4
 	FDB putchar
 	FCB 20
@@ -531,7 +530,7 @@ cc3
 	FCB 30
 	FCB 34
 	FDB 2
-*}
+;* }
 	FCB 34
 	FDB 4
 	FCB 32

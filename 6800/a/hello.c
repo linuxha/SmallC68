@@ -541,4 +541,3 @@ main() {
 nl() {
         putchar (13);
 }
-
