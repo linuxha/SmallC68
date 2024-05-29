@@ -1,22 +1,15 @@
 # https://www3.ntu.edu.sg/home/ehchua/programming/cpp/gcc_make.html#zz-2.3
 CC      = gcc
-COPT    = -g -O3 -D FDEBUG 
-V22OBJS = smallc.o cc2.o cc3.o cc4.o
+COPT    = -g -O3 -D FDEBUG  -D ASL
+
 OBJS    = smallc.o io.o heir.o ask.o options.o
 
 # smallc.c smallc.h # smallc.c -o smallc
 smallc: $(OBJS)
 	$(CC) $(COPT) -o $@  $^
 
-smallcv22: ${V22OBJS}
-	$(CC) $(LOPT) -o $@  $^
-
 %.o: %.c smallc.h
 	$(CC) $(COPT) -o $@ -c $<
-
-cc2.c: cc.h
-cc3.c: cc.h
-cc4.c: cc.h
 
 .PHONY: clean
 
