@@ -1,4 +1,4 @@
-	MACEXP  on
+        MACEXP  on
 
         CPU     6800            ; That's what asl has
 ;*/* Small C Demo Program */
@@ -11,7 +11,7 @@
 ;/* End:             */
 
 ;;;
-;;; WIP, need to convert this tfrom 6801 to 6800 @FIXME: replace 6801 op codes
+;;; WIP, need to convert this from 6801 to 6800 @FIXME: replace 6801 op codes
 ;;;
 ;        NAM SMALL-C RUN PACK FOR 6800/6802
 
@@ -19,9 +19,9 @@ STACK   EQU     $FF             ;* Our stack
 BASERAM EQU     $80             ;* VM Ram
 
 RAM     EQU     $1000
-ROM     EQU     $F100           ;* Simulator
+ROM     EQU     $F100           ;* Simulator (Okay not really ROM)
 
-;*   LAST UPDATE   20240518 ncherry@linuxha.com
+;*   LAST UPDATE   20240702 ncherry@linuxha.com
 
         ORG     BASERAM
 ;*
@@ -42,7 +42,7 @@ BTEMP   RMB     1
 RUN     LDS     #STACK          ;* @FIXME: Not sure 0 page is a good idea yet
         STS     STEMP
         ;; 
-        clra
+        clra                    ;* Zero out everything
         clrb
         staa    zPC
         staa    zPC+1
@@ -158,7 +158,7 @@ LD1SOFF TSX
         ldaa    0,X             ;* GET OFFSET
         ldab    1,X             ;* GET OFFSET
 ;       ADDD    zREG            ;* ADD OFFSET
-        addb    zREG+1           ;* ADD OFFSET
+        addb    zREG+1          ;* ADD OFFSET
         adca    zREG            ;* ADD OFFSET
         JMP     BUMP2A
 
@@ -583,16 +583,35 @@ DECR    subb    #$01
 ;*   BASIC COMPARE INSTRUCTION SUBROUTINE
 ;*   Compare the top of Stack to Register and set Condition codes
 ;*
+;*  Signed compare -- Carry reflects the sign of difference
+;*         (set means: top of stack < A,B )
+;*
+SCMP    TSX
+        LDAA    2,X             ;* GET TOP OF STACK
+        LDAB    3,X
+        SUBB    zREG+1          ;* SET CONDITION
+        SBCA    zREG            ;* ... FLAGS
+        BPL     STCMP1          ;* SKIP IF PLUS
+
+        STAB    zREG+1          ;* TEMP SAVE
+        ORAA    zREG+1          ;* SET/RESET ZERO FLAG
+        SEC                     ;* AND SET CARRY
+        RTS
+
+STCMP1  STAB    zREG+1
+        ORAA    zREG+1
+        CLC                     ;* CLEAR THE CARRY
+        RTS
+;*
 ;*  Unsigned compare, Carry set if top of stack < A,B
 ;*
 BCMP    TSX
-;       ldd     2,X             ;* GET TOP OF STACK
-        ldaa    2,X             ;* GET TOP OF STACK
-        ldab    3,X             ;* GET TOP OF STACK
-;       subd    zREG            ;* COMPARE
-        subb    zREG+1          ;* COMPARE
-        sbca    zREG            ;* COMPARE
-        RTS
+        LDAA    2,X             ;* GET TOP OF STACK
+        LDAB    3,X
+        CMPA    zREG            ;* CHECK TOP BYTE
+        BNE     BCMP1
+        CMPB    zREG+1
+BCMP1   RTS
 
 
 ;*-------------------------------
@@ -609,26 +628,26 @@ ZNE     BSR     BCMP
 
 ;*-------------------------------
 ;* #35  TEST FOR LESS THAN
-ZLT     BSR     BCMP
-        BLT     T
+ZLT     BSR     SCMP
+        BCS     T
         BRA     F
 
 ;*-------------------------------
 ;* #36  TEST FOR LESS THAN OR EQUAL
-ZLE     BSR     BCMP
-        BLE     T
+ZLE     BSR     SCMP
+        BLS     T
         BRA     F
 
 ;*-------------------------------
 ;* #37  TEST FOR GREATER THAN
-ZGT     BSR     BCMP
-        BGT     T
+ZGT     BSR     SCMP
+        BHI     T
         BRA     F
 
 ;*-------------------------------
 ;* #38  TEST FOR GREATER THAN OR EQUAL
-ZGE     BSR     BCMP
-        BGE     T
+ZGE     BSR     SCMP
+        BCC     T
         BRA     F
 
 ;*-------------------------------
@@ -653,11 +672,15 @@ UGT     BSR     BCMP
 ;* #42  TEST FOR GREATER THAN OR EQUAL (UNSIGNED)
 UGE     BSR     BCMP
         BCC     T
+
 F       CLRB                    ;* RETURN FALSE
         BRA     TRUE1
+
 T       LDAB    #1              ;* RETURN TRUE
+
 TRUE1   CLRA
         JMP     POPS            ;* POP STACK AND PROCEED
+
 
 ;*-------------------------------------
 ;* #43  SWITCH TO EXECUTABLE (ASSEMBLY) CODE
