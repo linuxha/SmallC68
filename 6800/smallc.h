@@ -1,5 +1,8 @@
 #ifndef SMALLC_H
 #define SMALLC_H
+
+#include <stdio.h>
+
 /************************************************/
 /*                                              */
 /*              small-c compiler                */
@@ -8,9 +11,9 @@
 /*                                              */
 /************************************************/
 
-#define BANNER  "** Ron Cain's Small-C V1.1.0 **"
+#define BANNER  "** Ron Cain's Small-C V1.1.1 **"
 
-#define VERSION " FLEX Version 2.1, 13 Aug 1982\n* Linux Version 0.0.1, Jan31 2023\n* Motorola 68xx"
+#define VERSION " FLEX Version 2.1, 13 Aug 1982\n;* Linux Version 0.0.2, Jul 05 2024\n;* Motorola 68xx"
 
 #define AUTHOR "       By S. Stepanoff & Neil Cherry"
 
@@ -44,13 +47,39 @@ extern struct _IO_FILE *stderr;
 
 /*      Define the symbol table parameters      */
 
-#define SYMSIZ   14             /* Tied to symbol table entry and name size (below)  */
-#define SYMTBSZ  5040
+//efine SYMSIZ   14             /* Tied to symbol table entry and name size (below)  */
+#define SYMSIZ   32             /* Tied to symbol table entry and name size (below)  */
+//#define SYMTBSZ  5040
+/*
+x = symtab[11520] = 500 symbols
+                    300 globals
+                    200 locals?
+ */
+#define SYMTBSZ  SYMSIZ*500
 #define NUMGLBS  300
 #define STARTGLB symtab
 #define ENDGLB   STARTGLB+NUMGLBS*SYMSIZ
 #define STARTLOC ENDGLB+SYMSIZ
 #define ENDLOC   symtab+SYMTBSZ-SYMSIZ
+
+#ifndef NJC
+/*      System wide name size (for symbols)     */
+
+#define NAMEMAX  27
+#define NAMESIZE NAMEMAX+1
+
+/*      Define symbol table entry format        */
+
+#define NAME    0
+#define IDENT   NAMESIZE
+#define TYPE    NAMESIZE+1
+#define STORAGE TYPE+1
+#define OFFSET  STORAGE+1
+
+
+extern struct symbolX;
+
+#else
 
 /*      Define symbol table entry format        */
 
@@ -64,6 +93,8 @@ extern struct _IO_FILE *stderr;
 
 #define NAMESIZE 9
 #define NAMEMAX  8
+
+#endif
 
 /*      Define possible entries for "ident"     */
 
