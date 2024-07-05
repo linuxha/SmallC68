@@ -18,6 +18,18 @@
 
 #include "smallc.h"
 
+struct symbol {
+    char name[NAMEMAX];         // 27 bytes 0-26
+    char ident;                 // 01 bytes 27 (Var/Arr/Ptr/Func)
+    char type;                  // 01 bytes 28 (Char/Int)
+    char storage;               // 01 bytes 29 (STATIK/STKLOC)
+    int  offset;                // 02 Offset 30-31 (value)
+    /*
+    cptr[OFFSET]   = value>>8;
+    cptr[OFFSET+1] = value&255;
+    */
+};
+
 /*      Now reserve some storage words          */
 
 #ifdef SKIP
@@ -127,6 +139,7 @@ long    *iptr;          /* work ptr to any long buffer */
 #endif
 
 int errCnt = 0;
+
 /*      >>>>> start cc1 <<<<<<          */
 
 /*                                      */
@@ -134,9 +147,9 @@ int errCnt = 0;
 /*                                      */
 int
 main(int argc, char *argv[]) {
-    glbptr=STARTGLB;        /* clear global symbols */
-    locidx=STARTLOC;        /* clear local symbols */
-    wqidx=wq;               /* clear while queue */
+    glbptr = STARTGLB;      /* clear global symbols, needs to be a symbol ptr */
+    locidx = STARTLOC;      /* clear local symbols */
+    wqidx  = wq;            /* clear while queue */
 
     output  = stdout;       /* no open units */
     input   = 0;            /* no open units */
@@ -144,18 +157,19 @@ main(int argc, char *argv[]) {
     saveout = 0;            /* no diverted output */
     
     macidx=                 /* clear the macro pool */
-        litidx=             /* clear literal pool */
-        Zsp =               /* stack ptr (relative) */
-        errcnt=             /* no errors */
-        errstop=            /* keep going after an error */
-        eof=                /* not eof yet */
-        ncmp=               /* no open compound states */
-        lastst=             /* no last statement yet */
-        mainflg=            /* not first file to asm */
-        fnstart=            /* current "function" started at line 0 */
-        lineno=             /* no lines read from file */
-        infunc=             /* not in function now */
-        quote[1]=
+        nxtlab   =
+        litidx   =          /* clear literal pool */
+        Zsp      =          /* stack ptr (relative) */
+        errcnt   =          /* no errors */
+        errstop  =          /* keep going after an error */
+        eof      =          /* not eof yet */
+        ncmp     =          /* no open compound states */
+        lastst   =          /* no last statement yet */
+        mainflg  =          /* not first file to asm */
+        fnstart  =          /* current "function" started at line 0 */
+        lineno   =          /* no lines read from file */
+        infunc   =          /* not in function now */
+        quote[1] =
         0;                  /*  ...all set to zero.... */
     quote[0]='"';           /* fake a quote literal */
     currfn=NULL;            /* no function yet */
@@ -173,13 +187,23 @@ main(int argc, char *argv[]) {
     openin();               /* and initial input file */
     header();               /* intro code */
 #endif
+    header();               /* intro code */
+
+    /*
+      @FIXME: We're not returning from parse but returning 0 ???
+    */
     parse();                /* process ALL input */
+
+    printf(";* ###\n;* ### Dump & trailer\n;* ###\n");
 
     dumplits();             /* then dump literal pool */
     dumpglbs();             /* and all static memory */
     trailer();              /* follow-up code */
     closeout();             /* close the output (if any) */
     errorsummary();         /* summarize errors (on console!) */
+
+    printf(";* ###\n;* ### Done\n;* ###\n");
+
     return(errCnt);                 /* then exit to system */
 }
 
@@ -188,14 +212,21 @@ main(int argc, char *argv[]) {
 /*                                      */
 void
 myAbort() {
-    if(input2)
+    pl("Compilation aborted.");  nl();
+
+    if(input2) {
         endinclude();
+    }
+
     if(input) {
         myFclose(input);
     }
+
     closeout();
     toconsole();
+
     pl("Compilation aborted.");  nl();
+
     exit(1); /* end abort */
 }
 
@@ -233,8 +264,15 @@ parse() {
         } else {
             newfunc();
         }
+
         blanks();       /* force eof if pending */
+        if(input == 0) {
+            break;
+        }
     }
+
+    outstr(";* ###\n;* ### Exit parse()\n;* ###\n");
+
 }
 
 /*                                      */
@@ -330,6 +368,10 @@ doinclude() {
 
     tofile();
 
+    /*
+    ** Cleanup on aisle 2!
+    ** @FIXME: Cleanup line+lidx (get rid of "" <> ;)
+    */
     if(input2) {
         error("Cannot nest include files");
     } else if((input2 = fopen((char *) line+lidx,"r")) == NULL) {
@@ -838,9 +880,9 @@ char *
 findglb(char *sname) {
     char *ptr;
 
-    ptr=STARTGLB;
-    while(ptr!=glbptr) {
-        if(astreq(sname,ptr,NAMEMAX))
+    ptr = STARTGLB;
+    while(ptr != glbptr) {
+        if(astreq(sname, ptr, NAMEMAX))
             return (ptr);
         ptr=ptr+SYMSIZ;
     }
@@ -853,9 +895,12 @@ findloc(char *sname) {
     char *ptr;
 
     ptr = STARTLOC;
-    while(ptr!=locidx) {
-        if(astreq(sname,ptr,NAMEMAX))
+
+    while(ptr != locidx) {
+        if(astreq(sname, ptr, NAMEMAX)) {
             return (ptr);
+        }
+
         ptr = ptr+SYMSIZ;
     }
     return (0);
@@ -864,41 +909,56 @@ findloc(char *sname) {
 char *
 addglb(char *sname, char id, char typ, long value) {
     char *ptr;
-    if(cptr=findglb(sname))
+
+    if(cptr = findglb(sname))
         return (cptr);
-    if(glbptr>=ENDGLB) {
+    if(glbptr >= ENDGLB) {
         error("global symbol table overflow");
         return (0);
     }
-    cptr=ptr=glbptr;
 
+    cptr = ptr = glbptr;
+
+    // cptr[NAME]  = sname (sorta)
     while(an(*ptr++ = *sname++));   /* copy name */
 
-    cptr[IDENT]=id;
-    cptr[TYPE]=typ;
-    cptr[STORAGE]=STATIK;
-    cptr[OFFSET]=value>>8;
-    cptr[OFFSET+1]=value&255;
-    glbptr=glbptr+SYMSIZ;
+    cptr[IDENT]    = id;
+    cptr[TYPE]     = typ;
+    cptr[STORAGE]  = STATIK;
+    cptr[OFFSET]   = value>>8;
+    cptr[OFFSET+1] = value&255;
+
+    glbptr         = glbptr+SYMSIZ;
+
     return (cptr);
 }
 
 char *
 addloc(char *sname, char id, char typ, long value) {
     char *ptr;
-    if(cptr=findloc(sname))return (cptr);
+
+    if(cptr = findloc(sname)){
+        return (cptr);
+    }
+
     if(locidx>=ENDLOC) {
         error("local symbol table overflow");
         return (0);
     }
-    cptr=ptr=locidx;
+
+    cptr = ptr = (char *) locidx;
+
+    // cptr[NAME]  = sname (sorta)
     while(an(*ptr++ = *sname++));   /* copy name */
-    cptr[IDENT]=id;
-    cptr[TYPE]=typ;
-    cptr[STORAGE]=STKLOC;
-    cptr[OFFSET]=value>>8;
-    cptr[OFFSET+1]=value&255;
-    locidx=locidx+SYMSIZ;
+
+    cptr[IDENT]    = id;
+    cptr[TYPE]     = typ;
+    cptr[STORAGE]  = STKLOC;
+    cptr[OFFSET]   = value>>8;
+    cptr[OFFSET+1] = value&255;
+
+    locidx         = locidx+SYMSIZ;
+
     return (cptr);
 }
 /* Test if next input string is legal symbol name */
@@ -947,7 +1007,7 @@ delwhile() {
         wqidx=wqidx-WQSIZ;
 }
 
-//int
+//int was
 long *
 readwhile() {
     if (wqidx==wq) {
@@ -960,8 +1020,8 @@ readwhile() {
 
 void
 kill() {
-    lidx=0;
-    line[lidx]=0;
+    lidx = 0;
+    line[lidx] = 0;
 }
 
 //int
@@ -992,14 +1052,25 @@ myInline() {
     int k;
     
     while(1) {
-        // Well this is now stupid
-        if (input == 0)
-            openin();
+        /*
+        ** We're seeing input 0 when we're done with the main input file
+        */
         if(eof) {
             return;
         }
-        if((unit = input2) == 0)
+
+        // Well this is now stupid
+        if (input == 0) { // njc
+            // This has an exit if "" so this is wrong
+            //openin();
+            eof = 1;
+            return;
+        }
+
+        if((unit = input2) == 0) {
             unit = input;
+        }
+
         kill();
 
         while((k = getc(unit)) > 0) {
@@ -1008,18 +1079,20 @@ myInline() {
             line[lidx]=k;
             lidx++;
         }
+
         line[lidx]=0;   /* append null */
         lineno++;       /* read one more line */
 
-        if(k<=0) {
+        if(k <= 0) {
             myFclose(unit);
+
             if(input2) {
                 endinclude();
-            }
-            else {
+            } else {
                 input = 0;
             }
         }
+
         if(lidx) {
             if((ctext) && (cmode)) {
                 comment();
@@ -1235,8 +1308,11 @@ error(char ptr[]) {
     char yunk[81];
 
     toconsole();
-    bell();
-    outstr("Line "); outdec(lineno); outstr(", ");
+    //bell();
+    outstr(";* ### <");
+    outstr(line);
+    outstr(">\n");
+    outstr(";* ### error line #"); outdec(lineno); outstr(", ");
     if(infunc==0)
         outbyte('(');
     if(currfn==NULL)
@@ -1382,19 +1458,19 @@ primary(long *lval) {
     // GRRR sname gets populate in isSymname
     //
     if(isSymname(sname)) {
-        if(ptr = findloc(sname)) {
+        if(ptr = (char *) findloc(sname)) {
             getloc(ptr);
-            lval[0]=ptr;
-            lval[1]=ptr[TYPE];
+            lval[0] = (long) ptr;
+            lval[1] = (long) ptr[TYPE];
             if(ptr[IDENT]==POINTER)lval[1]=CINT;
             if(ptr[IDENT]==ARRAY)return (0);
             else return (1);
         }
 
-        if(ptr=findglb(sname)) {
+        if(ptr = findglb(sname)) {
             if(ptr[IDENT]!=FUNCTION) {
-                lval[0]=ptr;
-                lval[1]=0;
+                lval[0] = (long) ptr;
+                lval[1] = 0;
                 if(ptr[IDENT]!=ARRAY)return (1);
                 immed();
                 outstr((char *) ptr);nl();
@@ -1404,8 +1480,8 @@ primary(long *lval) {
         }
 
         ptr=addglb(sname,FUNCTION,CINT,0);
-        lval[0]=ptr;
-        lval[1]=0;
+        lval[0] = (long) ptr;
+        lval[1] = 0;
         return (0);
     }
 
@@ -1421,14 +1497,14 @@ primary(long *lval) {
 
 void
 store(long *lval) {
-    if (lval[1]==0) putmem(lval[0]);
+    if (lval[1]==0) putmem((char *) lval[0]);
     else            putstk(lval[1]);
 }
 
 void
 rvalue(long *lval) {
     if((lval[0] != 0) && (lval[1] == 0)) {
-        getmem(lval[0]);
+        getmem((char *) lval[0]);
     } else {
         indirect(lval[1]);
     }
@@ -1762,19 +1838,19 @@ pseudoins(long k) {
 /* Print pseudo-op to define a byte */
 void
 defbyte() {
-    ot(" FCB ");
+    ot("FCB ");
 }
 
 /*Print pseudo-op to define storage */
 void
 defstorage() {
-    ot(" RMB ");
+    ot("RMB ");
 }
 
 /* Print pseudo-op to define a word */
 void
 defword() {
-    ot(" FDB ");
+    ot("FDB ");
 }
 
 /* Modify the stack pointer to the new value indicated */
@@ -2067,10 +2143,14 @@ astreq(char str1[], char str2[], int len) {
 
     k=0;
 
-    while (k<len) {
-        if ((str1[k]) != (str2[k])) break;
-        if (str1[k]==0) break;
-        /* if (str2[k]==0) break;  /*  seems and is redundant !!!! */
+    while (k < len) {
+        if ((str1[k]) != (str2[k])) {
+            printf(";* ### (%s) != (%s) [%d]\n", str1, str2, k);
+            printf(";* ### (%x) != (%x) [%d]\n", str1[k], str2[k], k);
+            break;
+        }
+        if (str1[k] == 0)           break;
+        if (str2[k] == 0)           break;
         k++;
     }
     return k;
@@ -2078,7 +2158,7 @@ astreq(char str1[], char str2[], int len) {
 
 void
 doError(long i) {
-    printf("%s\n", line);
+    printf(";* ### %s\n", line);
     kill();
 }
 
