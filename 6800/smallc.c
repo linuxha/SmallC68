@@ -1408,25 +1408,32 @@ blanks() {
     }
 }
 
+/*
+** Well I think we need to convert this to 16 bits
+*/
 void
 outdec(long numb) {
-    int k,zs;
+    int k, zs;
     char c;
-    zs = 0;
-    k=10000;
 
-    if (numb<0) {
+    zs = 0;
+    k  = 10000;
+
+    if (numb < 0) {
         numb=(-numb);
         outbyte('-');
     }
 
+    numb &= 0xFFFF;
+
     while (k>=1) {
-        c=numb/k + '0';
+        c = numb/k + '0';
         if ((c!='0') || (k==1)|(zs)) {
-            zs=1;outbyte(c);
+            zs = 1;
+            outbyte(c);
         }
-        numb=numb%k;
-        k=k/10;
+        numb = numb % k;
+        k = k/10;
     }
 }
 
@@ -1526,7 +1533,7 @@ constant(long val[]) {
     else if (pstr(val))
         immed();
     else if (qstr(val)) {
-        immed();printlabel(litlab);outbyte('+');outbyte(' ');
+        immed();printlabel(litlab);outbyte('+');
     }
     else return(0);
     outdec(val[0]);
