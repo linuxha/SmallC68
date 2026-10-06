@@ -61,7 +61,7 @@ smallc.c
 
 2024/07/05 - Found a few more bugs in the run0 code and the Small C compiler. Still alpha at best. I can't assemble anything the doesn't sudden run off the rails (zPC and zREG get corrupted). Still working on it.
 
-2026/10/05 - Asked Claude correct the pointer problems in the compiler. Now they're long instad of various char types. This currently compiles and runs. Still need to check the interp.asm, run0.c, hello.c and resultant files.
+2026/10/05 - Asked Claude correct the pointer problems in the compiler (6800/smallc). Now they're long instad of various char types. This currently compiles and runs. Still need to check the interp.asm, run0.c, hello.c and resultant files. I have not touch the other directories at this time.
 
 ## Understanding so far (Operation)
 
