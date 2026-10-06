@@ -1,11 +1,14 @@
 # https://www3.ntu.edu.sg/home/ehchua/programming/cpp/gcc_make.html#zz-2.3
 CC      = gcc
-COPT    = -g -O3 -D FDEBUG  -D ASL
-
+ifdef MDEBUG
+	COPT    = -g -O0 -D FDEBUG -D ASL
+else
+	COPT    = -O3 -D FDEBUG -D ASL
+endif
 OBJS    = smallc.o io.o heir.o ask.o options.o
 
 # smallc.c smallc.h # smallc.c -o smallc
-smallc: $(OBJS)
+smallc: $(OBJS) smallc.h
 	$(CC) $(COPT) -o $@  $^
 
 %.o: %.c smallc.h
