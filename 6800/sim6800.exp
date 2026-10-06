@@ -1,0 +1,76 @@
+#!/usr/bin/expect
+
+# Debug
+#exp_internal 1
+
+proc sleep {timeout} {
+    expect
+}
+
+set val ""
+
+set Version     "970224e"       ;# Version and language (e = Expect)
+set send_slow   { 1 .05 }       ;# How fast to exp_send the characters
+
+log_user 0                      ;# Keeps the user from seeing the
+                                ;# spawned the echo back.
+set arg [lindex $argv 0]
+
+if [catch "spawn sim6800 t1.s19" reason ] {
+  exit 1
+}
+
+set id $spawn_id
+
+expect -re ".*>" { puts "\rx##\r $expect_out(buffer)"}        ;#
+
+set flag 1
+
+send "B E\r"
+expect -re ".*>" { puts "\rx##\r $expect_out(buffer)"}        ;#
+
+send "B s F140\r"
+expect -re ".*>" { puts "\rx##\r $expect_out(buffer)"}        ;#
+
+send "g\r"
+expect -re ".*>" { puts "\rx##\r $expect_out(buffer)"}        ;#
+
+send "B c F140\r"
+expect -re ".*>" { puts "\rx##\r $expect_out(buffer)"}        ;#
+
+while {$flag > 0} {
+    expect {
+        timeout {
+            puts "## $expect_out(buffer)"
+            send "t\r"
+            #exp_continue
+        }
+
+        -re ".*>" {
+            puts "#> $expect_out(buffer)"
+            send "t\r"
+        }
+    }
+
+    expect {
+        timeout {
+            puts "## $expect_out(buffer)"
+            send "md 80\r"
+            #exp_continue
+        }
+
+        -re ".*>" {
+            puts "#> $expect_out(buffer)"
+            send "md 80\r"
+            #exp_continue
+        }
+
+        -re ".*Error.*" {
+            puts "#> $expect_out(buffer)"
+            send "q"
+            set flag 0
+            break
+        }
+    }
+        
+}

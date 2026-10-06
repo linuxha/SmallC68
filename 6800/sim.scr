@@ -1,0 +1,54 @@
+Script started on 2024-07-05 20:21:01-04:00 [TERM="screen.xterm-256color" TTY="/dev/pts/11" COLUMNS="164" LINES="39"]
+4762
+369266
+Agent pid 369266
+[?2004h[01;32mnjc@bustard[00m:[01;34m~/dev/git/SmallC68/6800[00m$ sim6800 ./tf-test2.s19
+[?2004lCouldn't open symbol file
+PC=f100 A:B=0000 X=0000 SP=0000 CCR=d0(11hInzvc)	[0]
+f100	8e 00 ff	lds  #00ff
+
+>t
+PC=f103 A:B=0000 X=0000 SP=00ff CCR=d0(11hInzvc)	[3]
+f103	9f 85		sts  85
+
+>t
+PC=f105 A:B=0000 X=0000 SP=00ff CCR=d0(11hInzvc)	[7]
+f105	4f		clra
+
+>t
+PC=f106 A:B=0000 X=0000 SP=00ff CCR=d4(11hInZvc)	[8]
+f106	5f		clrb
+
+>t
+PC=f107 A:B=0000 X=0000 SP=00ff CCR=d4(11hInZvc)	[9]
+f107	97 80		staa 80
+
+>t
+PC=f109 A:B=0000 X=0000 SP=00ff CCR=d4(11hInZvc)	[12]
+f109	97 81		staa 81
+
+>t
+PC=f10b A:B=0000 X=0000 SP=00ff CCR=d4(11hInZvc)	[15]
+f10b	97 82		staa 82
+
+>t
+PC=f10d A:B=0000 X=0000 SP=00ff CCR=d4(11hInZvc)	[18]
+f10d	97 83		staa 83
+
+>t
+PC=f10f A:B=0000 X=0000 SP=00ff CCR=d4(11hInZvc)	[21]
+f10f	97 84		staa 84
+
+>t
+PC=f111 A:B=0000 X=0000 SP=00ff CCR=d4(11hInZvc)	[24]
+f111	97 85		staa 85
+
+>t
+PC=f113 A:B=0000 X=0000 SP=00ff CCR=d4(11hInZvc)	[27]
+f113	97 86		staa 86
+
+>q
+[?2004h[01;32mnjc@bustard[00m:[01;34m~/dev/git/SmallC68/6800[00m$ less [K[K[K[K[K[?2004l
+exit
+
+Script done on 2024-07-05 20:21:34-04:00 [COMMAND_EXIT_CODE="0"]
