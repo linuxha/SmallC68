@@ -13,11 +13,12 @@
 
 STACK   EQU     $FF             ;* Our stack
 BASERAM EQU     $80             ;* VM Ram
+BUGRAM  EQU     $90
 
 RAM     EQU     $1000
-ROM     EQU     $F100           ;* Simulator
+ROM     EQU     $F100           ;* Simulator (Okay not really ROM)
 
-;*   LAST UPDATE   20240518 ncherry@linuxha.com
+;*   LAST UPDATE   20240702 ncherry@linuxha.com
 
         ORG     BASERAM
 ;*
@@ -38,7 +39,7 @@ BTEMP   RMB     1
 RUN     LDS     #STACK          ;* @FIXME: Not sure 0 page is a good idea yet
         STS     STEMP
         ;; 
-        clra
+        clra                    ;* Zero out everything
         clrb
         staa    zPC
         staa    zPC+1
@@ -49,6 +50,10 @@ RUN     LDS     #STACK          ;* @FIXME: Not sure 0 page is a good idea yet
         staa    STEMP+1
         staa    XTEMP
         staa    XTEMP+1
+        ;;
+        ldx     #MESG
+        jsr     PDATA1
+        jsr     PCRLF
         ;; 
         LDX     #CODE
         BRA     NEXT2           ;* START THE INTERPRETATION
@@ -63,31 +68,25 @@ BUMP2A  INX                     ;* INCR BY 2
         BRA     NEXT1           ;* FETCH NEXT INSTRUCTION
 
 NEXT    LDX     zPC
-;EXT1   std     zREG            ;* SAVE THE WORK
-NEXT1   staa    zREG            ;* SAVE THE WORK
-        stab    zREG+1          ;*
-NEXT2   LDAB    0,X             ;* GET THE PSEUDO-INSTRUCTION (B CONTAINS A TABLE OFFSET)
-        INX                     ;* INC zPC
+NEXT1   STAA    zREG            ;* SAVE THE WORK
+        STAB    zREG+1          ;* --REGISTER
+NEXT2   LDAB    0,X             ;* GET THE PSEUDO-INSTRUCTION
+        INX                     ;* (B CONTAINS A TABLE OFFSET)
         STX     zPC             ;* SAVE NEW zPC
-        LDX     #JTABLE         ;* POINT TO ROUTINE
-;*
-;* ABX -> X <- X + B
-;*
-        stx     XTEMP           ;* Save X to XTEMP
-        clra
-        addb    XTEMP+1         ;* add X lo to B -> B
-        adca    XTEMP           ;* add the X hi + CC to A ->
-        staa    XTEMP           ;* A -> XTEMP
-        stab    XTEMP+1         ;* B -> XTEMP+1
-        ldx     XTEMP           ;* retore new X (JTable+B offset)
-;*
-        LDAB    zREG+1          ;* What does B hold?
-        LDX     0,X
-        JMP     0,X             ;* Jump to function
+;* ==============================================================================
+;*                                                                              *
+        STAB    JJJ+2           ;* SAVE AS PAGE OFFSET                          *
+;*                                                                              *
+;* ==============================================================================
+        LDAB    zREG+1          ;* RESTORE                                      *
+JJJ     LDX     JTABLE          ;* POINT TO ROUTINE (SELF MODIFYING CODE)
+        JMP     0,X             ;* GO EXECUTE THE PSEUDO-INSTR.
 
 ;**************************************************************
 ;*                  THE JUMP TABLE                            *
 ;**************************************************************
+
+        ORG     ((*+255)/256)*256   ;* MUST START ON A PAGE BOUNDARY
 
 ;*              zOP Code           Pos  BYTE value
 JTABLE  FDB     LD1IM           ;*  #0  #0  immediate
@@ -140,32 +139,28 @@ JTABLE  FDB     LD1IM           ;*  #0  #0  immediate
 ;* #0 LOAD REG WITH IMMED. VALUE
 ;* zPC is the immediate value
 LD1IM   LDX     zPC
-;       LDD     0,X             ;* HIGH BYTE
         ldaa    0,X             ;* HIGH BYTE
         ldab    1,X             ;* HIGH BYTE
-        JMP     BUMP2A
+        jmp     BUMP2A
 
 ;*-------------------------
 ;* #1 LOAD STACK ADDRESS + OFFSET INTO REG
-LD1SOFF TSX
-        STX     zREG            ;* SAVE STACK VALUE
-        LDX     zPC
-;       LDD     0,X             ;* GET OFFSET
+LD1SOFF tsx
+        stx     zREG            ;* SAVE STACK VALUE
+        ldx     zPC
         ldaa    0,X             ;* GET OFFSET
         ldab    1,X             ;* GET OFFSET
-;       ADDD    zREG            ;* ADD OFFSET
-        addb    zREG+1           ;* ADD OFFSET
+        addb    zREG+1          ;* ADD OFFSET
         adca    zREG            ;* ADD OFFSET
-        JMP     BUMP2A
+        jmp     BUMP2A
 
 ;*-------------------------
 ;* #2  LOAD WORD @ ADDRESS
-LD1     LDX     zPC
-        LDX     0,X             ;* GET ADDRESS
-;D1A    LDD     0,X             ;* GET WORD
+LD1     ldx     zPC
+        ldx     0,X             ;* GET ADDRESS
 LD1A    ldaa    0,X             ;* GET WORD
         ldab    1,X             ;* GET WORD
-        JMP     BUMP2
+        jmp     BUMP2
 
 ;*-------------------------
 ;* #3  LOAD BYTE @ ADDRESS
@@ -180,7 +175,6 @@ LDB1A   JMP     BUMP2
 ;*-------------------------
 ;* #4  LOAD WORD INDIRECT (ADDR IN REG)
 LD1R    LDX     zREG            ;* GET ADDRESS
-;       LDD     0,X             ;* GET WORD
         ldaa    0,X             ;* GET WORD
         ldab    1,X             ;* GET WORD
         JMP     NEXT
@@ -198,7 +192,6 @@ LDB1RA  JMP     NEXT
 ;* #6  STORE WORD @ ADDRESS
 ST1     LDX     zPC
         LDX     0,X             ;* GET ADDRESS
-;       STD     0,X             ;* STORE WORD
         staa    0,X             ;* STORE WORD
         stab    1,X             ;* STORE WORD
         JMP     BUMP2
@@ -213,8 +206,7 @@ STB1    LDX     zPC
 ;*-------------------------
 ;* #8  STORE WORD @ ADDRESS ON STACK
 ST1SP   TSX                     ;* STACK TO INDEX
-        LDX     0,X             ;* GET ADDRESS
-;       STD     0,X             ;* STORE WORD
+        ldx     0,X             ;* GET ADDRESS
         staa    0,X             ;* STORE WORD
         stab    1,X             ;* STORE WORD
         INS
@@ -232,30 +224,22 @@ STB1SP  TSX
 
 ;*-------------------------
 ;* #10  PUSH WORD ON STACK
-PUSHR1  PSHB                    ;* A & B on the stack
+PUSHR1  PSHB
         PSHA
         LDX     zPC
         JMP     NEXT2
 
 ;*-------------------------
 ;* #11  SWAP REG AND TOP OF STACK
-;XG1    PULX                    ;* @FIXME: Need a proper pull
-EXG1    staa    ATEMP           ;* GET ADDRESS
-        stab    BTEMP           ;* Save B
-        pula                    ;* Get Address of stack
-        pulb                    ;*
-        staa    XTEMP           ;* Save A to XTEMP
-        stab    XTEMP+1         ;* Save B to XTEMP+1
-        ldx     XTEMP           ;* Get Address and put it in X
-        ldaa    ATEMP           ;* Restore A
-        ldab    BTEMP           ;* Restore B
-;
+EXG1    TSX
+        LDX     0,X             ;* GET VALUE ON STACK
         STX     zREG            ;* SAVE
-        PSHB
+        INS
+        INS
+        PSHB 
         PSHA                    ;* REG ON STACK
-;       LDD     zREG            ;* NEW REG
-        ldaa    zREG            ;* NEW REG
-        ldab    zREG+1          ;* NEW REG
+        LDAA    zREG            ;* NEW REG
+        LDAB    zREG+1
         LDX     zPC
         JMP     NEXT2
 
@@ -276,71 +260,49 @@ BRZL    ORAA    zREG+1          ;* SET FLAGS
 JSRL    LDX     zPC
         INX                     ;* ADJUST RETURN
         INX                     ;* -- ADDRESS
-;       PSHX                    ;* PUSH RETURN ADDRESS @FIXME: Need a proper push
-        staa    ATEMP           ;* Save D [A:B]
-        stab    BTEMP           ;* 
-        stx     XTEMP           ;* Copy X to XTEMP
-        ldaa    XTEMP           ;* Load XTEMP into D [A:B]
-        ldab    XTEMP+1         ;* 
-        pshb                    ;* Push X [A:B] onto the stack
-        psha
-        ldaa    ATEMP           ;* Restore D [A:B]
-        ldab    BTEMP
-;       PSHX                    ;* PUSH RETURN ADDRESS @FIXME: Need a proper push
+        DES
+;* ==============================================================================
+;*                                                                              *
+        STS     *+5             ;*  *** SELF MODIFYING CODE ***                 *
+;*                                                                              *
+;* ==============================================================================
+        DES
+        STX     $FFFF           ;* PUSH RETURN ADDRESS
         BRA     JMPL
 
 ;*-------------------------
 ;* #15  CALL TO TOP OF STACK
-;SRSP   PULX                    ;*
-JSRSP   staa    ATEMP           ;* Save A
-        stab    BTEMP           ;* Save B
-        pula                    ;* Get X off the stack
-        pulb                    ;*
-        staa    XTEMP           ;* Save A to XTEMP
-        stab    XTEMP+1         ;* Save B to XTEMP+1
-        ldx     XTEMP           ;* Get address off the stack
-        ldaa    ATEMP           ;* Restore A
-        ldab    BTEMP           ;* Restore B
-;                               ;*
-;       LDD     zPC             ;* GET RETURN ADDRESS
-        ldaa    zPC             ;* GET RETURN ADDRESS
-        ldab    zPC+1           ;* 
-        PSHB                    ;* SAVE RETURN ADDRESS
-        PSHA
-        JMP     NEXT2
+JSRSP   tsx                     ;* POINT TO STACK
+        ldx     0,X             ;* GET ADDRESS (NEW zPC)
+        ins                     ;* POP
+        ins
+        ldab    zPC+1           ;* GET RETURN ADDRESS
+        pshb 
+        ldab    zPC
+        pshb                    ;* SAVE RETURN ADDRESS
+        jmp     NEXT2
 
 ;*-------------------------
-;* #16  RETURN TO Small C CALLER
-;TSC    PULX                    ;* GET ADDRESS
-RTSC    staa    ATEMP           ;* GET ADDRESS
-        stab    BTEMP           ;* Save B
-        pula                    ;* Get Address of stack
-        pulb                    ;*
-        staa    XTEMP           ;* Save A to XTEMP
-        stab    XTEMP+1         ;* Save B to XTEMP+1
-        ldx     XTEMP           ;* Get Address and put it in X
-        ldaa    ATEMP           ;* Restore A
-        ldab    BTEMP           ;* Restore B
-;*
+;* #16  RETURN TO CALLER
+RTSC    TSX
+        LDX     0,X             ;* GET ADDRESS
+        INS                     ;* POP
+        INS
         JMP     NEXT1
 
 ;*-------------------------
 ;* #17  MODIFY THE STACK POINTER
 MODSP   LDX     zPC
-;       LDD     0,X             ;* GET VALUE
-        ldaa    0,X             ;* GET VALUE
-        ldab    1,X             ;* GET VALUE
+        LDAA    0,X             ;* GET VALUE
+        LDAB    1,X
         STS     STEMP
-;       ADDD    STEMP           ;* ADD STACK POINTER
-        addb    STEMP+1         ;* ADD STACK POINTER
-        adca    STEMP           ;* ADD STACK POINTER
-;       STD     STEMP           ;*
-        staa    STEMP
-        stab    STEMP+1
+        ADDB    STEMP+1         ;* ADD STACK POINTER
+        ADCA    STEMP
+        STAA    STEMP
+        STAB    STEMP+1
         LDS     STEMP           ;* NEW STACK POINTER
-;       LDD     zREG            ;* RESTORE REGISTER
-        ldaa    zREG            ;* RESTORE REGISTER
-        ldab    zREG+1          ;* RESTORE REGISTER
+        LDAA    zREG            ;* RESTORE REGISTER
+        LDAB    zREG+1
         JMP     BUMP2A
 
 ;*---------------------------
@@ -352,20 +314,18 @@ DBL1    asla                    ;* May not match the asld flag settings
 
 ;*---------------------------
 ;* #19  ADD REG AND TOP OF STACK (THEN POP)
-ADDS    TSX
-;       ADDD    0,X              ;* DO THE ADD
+ADDS    tsx
         addb    1,X             ;* DO THE ADD
         adca    0,X             ;* DO THE ADD
-        JMP     POPS            ;* POP & RETURN
+        jmp     POPS            ;* POP & RETURN
 
 ;*---------------------------
 ;* #20  SUBTRACT REG FROM TOP OF STACK
-SUBFST  PULA                    ;* GET VALUE OFF STACK
-        PULB
-;       SUBD    zREG            ;* SUBTRACT REGISTER
+SUBFST  pula                    ;* GET VALUE OFF STACK
+        pulb
         subb    zREG+1          ;* SUBTRACT REGISTER
         sbca    zREG            ;* SUBTRACT REGISTER
-        JMP     NEXT
+        jmp     NEXT
 
 ;*---------------------------
 ;* #21  MULTIPLY TOP OF STACK BY REG (RESULT IN REG)
@@ -382,7 +342,6 @@ M2      ROR     3,X             ;* SHIFT MULTIPLIER
         DEC     0,X             ;* DONE ?
         BMI     M4
         BCC     M3
-;       ADDD    1,X
         addb    2,X
         adca    1,X
 
@@ -434,32 +393,30 @@ MOD1    ANDA    #1              ;* MASK OFF BIT 0
 ;*             REMAINDER IN A,B
 ;*             SIGN FLAG IN DFLAG
 ;*
-BDIV    CLR     DFLAG
-        TSTA                    ;* CHECK DIVISOR SIGN
-        BPL     BDIV1
+BDIV    clr     DFLAG
+        tsta                    ;* CHECK DIVISOR SIGN
+        bpl     BDIV1
 
-        INC     DFLAG           ;* ADJUST SIGN FLAG
-        BSR     NEGATE          ;* TAKE ABSOLUTE VALUE
+        inc     DFLAG           ;* ADJUST SIGN FLAG
+        bsr     NEGATE          ;* TAKE ABSOLUTE VALUE
 
-BDIV1   PSHB                    ;* FORCE ON STACK
-        PSHA
-        LDAA    #17             ;* BIT COUNTER
-        PSHA
-        TSX                     ;* POINT TO DATA
-;       LDD     5,X             ;* CHECK SIGN
+BDIV1   pshb                    ;* FORCE ON STACK
+        psha
+        ldaa    #17             ;* BIT COUNTER
+        psha
+        tsx                     ;* POINT TO DATA
         ldaa    5,X             ;* CHECK SIGN
 ;* This trip might not be necessary! @FIXME:
         ldab    6,X             ;* CHECK SIGN @FIXME: <- Do I need this?
-        BPL     BDIV2           ;* -- OF DIVIDEND
+        bpl     BDIV2           ;* -- OF DIVIDEND
 
-        COM     DFLAG           ;* ADJUST FLAG
-        BSR     NEGATE
-;       STD     5,X
+        com     DFLAG           ;* ADJUST FLAG
+        bsr     NEGATE
         staa    5,X
         stab    6,X
 
-BDIV2   CLRA
-        CLRB
+BDIV2   clra
+        clrb
 
 ;* MAIN DIVIDE LOOP (UNSIGNED)
 
@@ -469,13 +426,12 @@ UDIV1   CMPA    1,X
         CMPB    2,X
         BCC     UDIV3
 
-UDIV2   CLC
-        BRA     UDIV4
+UDIV2   clc
+        bra     UDIV4
 
-;DIV3   SUBD    1,X
 UDIV3   subb    2,X
         sbca    1,X
-        SEC
+        sec
 
 UDIV4   ROL     6,X
         ROL     5,X
@@ -579,16 +535,35 @@ DECR    subb    #$01
 ;*   BASIC COMPARE INSTRUCTION SUBROUTINE
 ;*   Compare the top of Stack to Register and set Condition codes
 ;*
+;*  Signed compare -- Carry reflects the sign of difference
+;*         (set means: top of stack < A,B )
+;*
+SCMP    TSX
+        LDAA    2,X             ;* GET TOP OF STACK
+        LDAB    3,X
+        SUBB    zREG+1          ;* SET CONDITION
+        SBCA    zREG            ;* ... FLAGS
+        BPL     STCMP1          ;* SKIP IF PLUS
+
+        STAB    zREG+1          ;* TEMP SAVE
+        ORAA    zREG+1          ;* SET/RESET ZERO FLAG
+        SEC                     ;* AND SET CARRY
+        RTS
+
+STCMP1  STAB    zREG+1
+        ORAA    zREG+1
+        CLC                     ;* CLEAR THE CARRY
+        RTS
+;*
 ;*  Unsigned compare, Carry set if top of stack < A,B
 ;*
 BCMP    TSX
-;       ldd     2,X             ;* GET TOP OF STACK
-        ldaa    2,X             ;* GET TOP OF STACK
-        ldab    3,X             ;* GET TOP OF STACK
-;       subd    zREG            ;* COMPARE
-        subb    zREG+1          ;* COMPARE
-        sbca    zREG            ;* COMPARE
-        RTS
+        LDAA    2,X             ;* GET TOP OF STACK
+        LDAB    3,X
+        CMPA    zREG            ;* CHECK TOP BYTE
+        BNE     BCMP1
+        CMPB    zREG+1
+BCMP1   RTS
 
 
 ;*-------------------------------
@@ -605,28 +580,28 @@ ZNE     BSR     BCMP
 
 ;*-------------------------------
 ;* #35  TEST FOR LESS THAN
-ZLT     BSR     BCMP
-        BLT     T
+ZLT     BSR     SCMP
+        BCS     T
         BRA     F
 
 ;*-------------------------------
 ;* #36  TEST FOR LESS THAN OR EQUAL
-ZLE     BSR     BCMP
-        BLE     T
+ZLE     BSR     SCMP
+        BLS     T
         BRA     F
 
 ;*-------------------------------
 ;* #37  TEST FOR GREATER THAN
-ZGT     BSR     BCMP
-        BGT     T
+ZGT     BSR     SCMP
+        BHI     T
         BRA     F
 
 ;*-------------------------------
 ;* #38  TEST FOR GREATER THAN OR EQUAL
-ZGE     BSR     BCMP
-        BGE     T
+ZGE     BSR     SCMP
+        BCC     T
         BRA     F
-
+        
 ;*-------------------------------
 ;* #39 TEST FOR LESS THAN (UNSIGNED)
 ULT     BSR     BCMP
@@ -649,10 +624,13 @@ UGT     BSR     BCMP
 ;* #42  TEST FOR GREATER THAN OR EQUAL (UNSIGNED)
 UGE     BSR     BCMP
         BCC     T
-F       CLRB                    ;* RETURN FALSE
+
+F       CLRB                    ;* RETURN False
         BRA     TRUE1
-T       LDAB    #1              ;* RETURN TRUE
-TRUE1   CLRA
+
+T       LDAB    #1              ;* RETURN True
+
+TRUE1   CLRA 
         JMP     POPS            ;* POP STACK AND PROCEED
 
 ;*-------------------------------------
@@ -660,15 +638,158 @@ TRUE1   CLRA
 ASMC    LDX     zPC             ;* POINT TO CODE
         JMP     0,X             ;* GO EXECUTE IT
 
-WARMS   NOP                     ;* Makes it easier to pop a SWI in here
-        BRA     WARMS
+;* For the simulator
+;*      ADDRESS
+ACIACS  EQU     $F000
+ACIADA  EQU     $F001
 
-;* -[ Libraries ]---------------------------------------------------------------
-xnl      ldaa    #13             ;* ^M
-        staa    $F001
-        ;;
-        ;; Okay how are we called?
+putchar FCB     86
+        tsx
+        ldaa    3,X             ;* GET THE CHAR
+        ;bra     OUTEEE
+;* -----------------------------------------------------------------------------
+;*
+;*      OUTPUT ONE CHAR 
+PUTC
+OUTEEE  psha
+        inc     BUGRAM+0
+OUTEEE1 ldaa    ACIACS
+        asra
+        asra
+        bcc     OUTEEE1
+        pula
+        staa    ACIADA
+        rts
+
+;*
+;*      PRINT DATA POINTED AT BY X-REG
+PDATA2  bsr     OUTEEE
+        inx
+PDATA1  ldaa    0,X
+        cmpa    #0
+        bne     PDATA2
+        rts             ;* STOP ON EOT
+
+
+PCRLF   ldx     #CRLFST         ; ($771F)
+        bsr     PDATA1
+        rts
+
+;*----------------------------------------------
+;*  puts(string)  print a string on the terminal
+puts    fcb     86
+        TSX
+        inc     BUGRAM+1
+        LDX     2,X             ;* GET STRING ADDRESS
+PLOOP   LDAA    0,X             ;* GET THE CHAR
+        BEQ     GETS4           ;* IF END OF STRING--QUIT
+        CMPA    #'\\'           ;* SPECIAL CHAR ?
+        BNE     PLOOP1          ;* NO, SKIP
+        BSR     SPECIAL         ;* YES, INTERPRET
+        CMPA    #$0D            ;* IS IT A CR (NEWLINE)
+        BNE     PLOOP1          ;* NO--SKIP
+        bsr     PCRLF           ;* YES PRINT CR/LF PAIR
+        BRA     PLOOP2
+PLOOP1  JSR     PUTC            ;* PRINT IT
+PLOOP2  INX                     ;* POINTER BUMP
+        BRA     PLOOP
+
+GETS4   JMP     RTSC
+
+;*  This subroutine interprets the backslash (\) sequence.
+
+SPECIAL INX
+        LDAA    0,X             ;* GET NEXT CHAR
+        CMPA    #'b'            ;* \b = ^H
+        BNE     SP1
+        LDAA    #08             ;* BACKSPACE
+        BRA     SPEXIT
+SP1     CMPA    #'f'            ;* \f = FF
+        BNE     SP2
+        LDAA    #$0C            ;* FORMFEED
+        BRA     SPEXIT
+SP2     CMPA    #'n'            ;* Newline 0x0D
+        BNE     SP3
+        LDAA    #$0D            ;* NEWLINE
+        BRA     SPEXIT
+SP3     CMPA    #'\\'           ;* BACKSLASH
+        BEQ     SPEXIT
+        CMPA    #'\''           ;* SINGLE QUOTE
+        BEQ     SPEXIT
+        CMPA    #'\"'           ;* DOUBLE QUOTE
+        BEQ     SPEXIT
+        CMPA    #'x'            ;* START OF HEX SEQUENCE
+        BEQ     SPHEX
+        CMPA    #'0'            ;* OCTAL SEQUENCE ?
+        BLT     SPERR
+        CMPA    #'7'
+        BLE     SPOCTAL         ;* YES
+
+SPERR   DEX                     ;* BACKUP THE POINTER
+        LDAA    0,X             ;* RESTORE CHAR
+SPEXIT  RTS                     ;* RETURN
+
+SPOCTAL LDAB    #3
+        STAB    DFLAG           ;* SAVE COUNTER
+        CLRB 
+
+SPOCT1  SUBA    #'0'            ;* CONVERT TO DIGIT
+        ASLB                    ;* SHIFT ACCUM
+        ASLB 
+        ASLB 
+        ABA                     ;* ADD IN NEW DIGIT
+        TAB                     ;* SAVE
+        DEC     DFLAG
+        BEQ     SPBYE           ;* IF MAX COUNT--EXIT
+        INX
+        LDAA    0,X             ;* GET NEXT CHAR
+        CMPA    #'0'            ;* VERIFY IF OCTAL
+        BLT     SPFINI
+        CMPA    #'7'
+        BLE     SPOCT1          ;* YES, CONTINUE
+
+SPFINI  DEX                     ;* BACKUP
+SPBYE   TBA                     ;* GET ACCUM CHAR
+        RTS
+
+SPHEX   LDAB    #2
+        STAB    DFLAG
+        CLRB 
+
+SPHEXL  INX
+        LDAA    0,X             ;* GET NEXT CHAR
+        CMPA    #'0'            ;* VERIFY IF HEX
+        BLT     SPFINI          ;* ..
+        CMPA    #'9'            ;* ..
+        BLE     SPHEX2          ;* ..
+        CMPA    #'A'            ;* ..
+        BLT     SPFINI          ;* ..
+        CMPA    #'F'            ;* ..
+        BLE     SPHEX1          ;* ..
+        CMPA    #'a'            ;* ..
+        BLT     SPFINI          ;* ..
+        CMPA    #'f'            ;* ..
+        BGT     SPFINI          ;* ..
+        SUBA    #$20            ;* YES IT IS HEX
+SPHEX1  SUBA    #7
+SPHEX2  SUBA    #'0'
+        ASLB 
+        ASLB 
+        ASLB 
+        ASLB 
+        ABA
+        TAB
+        DEC    DFLAG
+        BEQ    SPBYE            ;* MAX COUNT REACHED ???
+        BRA    SPHEXL           ;* NO, LOOP
+
+CRLFST  fcc     '\n\r\0'        ;* CR, LF, NUL, NUL, EOT
+MESG    fcc     'Small C v1.1.1\n\r'
+
+WARMS   BRA     *
 
 CODE    EQU     *
+
 ;* byte codes follow
+
 #endasm
