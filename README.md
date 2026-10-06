@@ -57,7 +57,11 @@ smallc.c
 
 2023/02/04 - I've got the compiler hacked together and mostly working. What I've found is that the small c compiler outputs pseudo code and that the run9 (6809) and run1 (6801) code are the asm source to an interpreter. Assemble the code together and you have a program. This small C compiler is still quite limitted but may be useful and as one of the notes files points out C is easier to write than asm code. Anyway I'm posting this mess so I don't lose it and so other might get ideas. Just note that this is terrible C code. It was meant to use the very limmited small c compiler to compile itself. I'm in the process of making it work under Linux as a cross compiler for any of the Motorola preocessors. It will no longer compiler itself.
 
-2024/05/19 - I've added more debugging to the Small C compiler and I've written an Alpha version of therun0.asm (6800 version). I haven't tested it yet.
+2024/05/19 - I've added more debugging to the Small C compiler and I've written an Alpha version of the run0.asm (6800 version). I haven't tested it yet.
+
+2024/07/05 - Found a few more bugs in the run0 code and the Small C compiler. Still alpha at best. I can't assemble anything the doesn't sudden run off the rails (zPC and zREG get corrupted). Still working on it.
+
+2026/10/05 - Asked Claude correct the pointer problems in the compiler. Now they're long instad of various char types. This currently compiles and runs. Still need to check the interp.asm, run0.c, hello.c and resultant files.
 
 ## Understanding so far (Operation)
 
@@ -192,7 +196,7 @@ cc7
 * --- End of Compilation ---
 ```
 
-Currently the Small C compiler I have under Linux has a few issues I need to work on.
+Currently the Small C compiler I have under Linux has a few issues I need to work on. I am gradually finding issues and resolving them. I've recently uploaded both a new run0.asm and updated smallc.h and smallc.c. I'll continue to do that as I work on everything.
 
 # Useful links:
 
