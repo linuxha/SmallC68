@@ -92,10 +92,10 @@ openout() {
     if(ch()==0) return;                  /* none given... */
     if((output=fopen((char *) line,"w"))==NULL) { /* if given, open */
         output=0;                        /* can't open */
-        printf("Opps %x\n", output);
+        printf("Opps %p\n", (void *) output);
         error("Open failure!");
     }
-    printf("0x%x\n", output);
+    printf("%p\n", (void *) output);
     kill();                              /* erase line */
 }
 

@@ -92,8 +92,8 @@ No symbol "lval" in current context.
 */
 long
 heir1(long lval[]) {
-    int k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k = heir2(lval);
 
@@ -102,12 +102,15 @@ heir1(long lval[]) {
             needlval();
             return (0);
         }
+
         if (lval[1]) {
             zpush();
         }
+
         if(heir1(lval2)) {
             rvalue(lval2);
         }
+
         store(lval);
         return (0);
     }
@@ -120,8 +123,8 @@ heir1(long lval[]) {
 */
 long
 heir2(long lval[]) {
-    int k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k=heir3(lval);
 
@@ -145,8 +148,8 @@ heir2(long lval[]) {
 */
 long
 heir3(long lval[]) {
-    int k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k=heir4(lval);
 
@@ -171,8 +174,8 @@ heir3(long lval[]) {
 */
 long
 heir4(long lval[]) {
-    int k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k=heir5(lval);
     blanks();
@@ -198,8 +201,8 @@ heir4(long lval[]) {
 */
 long
 heir5(long lval[]) {
-    int k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k=heir6(lval);
     blanks();
@@ -229,8 +232,8 @@ heir5(long lval[]) {
 */
 long
 heir6(long lval[]) {
-    int k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k=heir7(lval);
     blanks();
@@ -248,14 +251,14 @@ heir6(long lval[]) {
             zpush();
             if(heir7(lval2)) rvalue(lval2);
             zpop();
-            cptr = lval; //[0]
+            cptr = (char *) lval; //[0]
             if(lval) {
                 if(cptr[IDENT]==POINTER) {
                     ule();
                     continue;
                 }
             }
-            cptr = lval2; //[0]
+            cptr = (char *) lval2; //[0]
             if(lval2) {
                 if(cptr[IDENT]==POINTER) {
                     ule();
@@ -268,14 +271,14 @@ heir6(long lval[]) {
             zpush();
             if(heir7(lval2))rvalue(lval2);
             zpop();
-            cptr = lval; //[0]
+            cptr = (char *) lval; //[0]
             if(lval) {
                 if(cptr[IDENT]==POINTER) {
                     uge();
                     continue;
                 }
             }
-            cptr = lval2; //[0]
+            cptr = (char *) lval2; //[0]
             if(lval2) {
                 if(cptr[IDENT]==POINTER) {
                     uge();
@@ -290,14 +293,14 @@ heir6(long lval[]) {
 
             if(heir7(lval2))rvalue(lval2);
             zpop();
-            cptr = lval; //[0]
+            cptr = (char *) lval; //[0]
             if(lval) {
                 if(cptr[IDENT]==POINTER) {
                     ult();
                     continue;
                 }
             }
-            cptr=lval2; //[0]
+            cptr = (char *) lval2; //[0]
             if(lval2)
                 if(cptr[IDENT]==POINTER) {
                     ult();
@@ -310,14 +313,14 @@ heir6(long lval[]) {
             zpush();
             if(heir7(lval2))rvalue(lval2);
             zpop();
-            cptr = lval; //[0]
+            cptr = (char *) lval; //[0]
             if(lval) {
                 if(cptr[IDENT]==POINTER) {
                     ugt();
                     continue;
                 }
             }
-            cptr = lval2; //[0]
+            cptr = (char *) lval2; //[0]
             if(lval2) {
                 if(cptr[IDENT]==POINTER) {
                     ugt();
@@ -336,8 +339,8 @@ heir6(long lval[]) {
 */
 long
 heir7(long lval[]) {
-    int  k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k = heir8(lval);
     blanks();
@@ -370,8 +373,8 @@ heir7(long lval[]) {
 
 long
 heir8(long lval[]) {
-    int k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k=heir9(lval);
     blanks();
@@ -382,7 +385,8 @@ heir8(long lval[]) {
         if (match("+")) {
             zpush();
             if(heir9(lval2))rvalue(lval2);
-            if(cptr=lval[0])
+            cptr = (char *) lval[0];
+            if(cptr)
                 if((cptr[IDENT]==POINTER) &&
                    (cptr[TYPE]==CINT))
                     doublereg();
@@ -392,7 +396,8 @@ heir8(long lval[]) {
         else if (match("-")) {
             zpush();
             if(heir9(lval2))rvalue(lval2);
-            if(cptr=lval[0])
+            cptr = (char *) lval[0];
+            if(cptr)
                 if((cptr[IDENT]==POINTER) &&
                    (cptr[TYPE]==CINT))
                     doublereg();
@@ -408,8 +413,8 @@ heir8(long lval[]) {
  */
 long
 heir9(long lval[]) {
-    int k;
-    int lval2[2];
+    long k;
+    long lval2[2];
 
     k=heir10(lval);
     blanks();
@@ -445,7 +450,7 @@ heir9(long lval[]) {
  */
 long
 heir10(long lval[]) {
-    int k;
+    long k;
     long *ptr;
 
     if(match("++")) {
@@ -558,8 +563,7 @@ heir10(long lval[]) {
 
 long
 heir11(long *lval) {
-    int k;
-
+    long k;
     long *ptr;
 
     k = primary(lval);
@@ -616,3 +620,5 @@ heir11(long *lval) {
     }
     return (k);
 }
+
+// fini

@@ -32,13 +32,12 @@ struct symbol {
 
 /*      Now reserve some storage words          */
 
-#ifdef SKIP
 char    symtab[SYMTBSZ];        /* symbol table */
 char    *glbptr;                /* ptrs to next entries */
-int     locidx;
+char    *locidx;                /* ptr to next local entry (a symtab ptr, NOT a byte count) */
 
-char    wq[WQTABSZ];            /* while queue */
-char    *wqidx;                 /* ptr to next entry */
+long    wq[WQTABSZ];            /* while queue (4 longs per entry) */
+long    *wqidx;                 /* ptr to next entry */
 
 char    litq[LITABSZ];          /* literal pool */
 char    litidx;                 /* ptr to next entry */
@@ -54,59 +53,7 @@ FILE *output;            /* no open units */
 FILE *input;             /* no open units */
 FILE *input2;            /* no open units */
 FILE *saveout;           /* no diverted output */
-
-/*      Misc storage    */
-
-int     nxtlab,         /* next avail label # */
-        litlab,         /* label # assigned to literal pool */
-        Zsp,            /* compiler relative stk ptr */
-        argstk,         /* function arg sp */
-        ncmp,           /* # open compound statements */
-        errcnt,         /* # errors in compilation */
-        errstop,        /* stop on error */
-        eof,            /* set non-zero on final input eof */
-        glbflag,        /* non-zero if internal globals */
-        ctext,          /* non-zero to intermix c-source */
-        cmode,          /* non-zero while parsing c-code */
-                        /* zero when passing assembly code */
-        lastst,         /* last executed statement type */
-        mainflg,        /* output is to be first asm file */
-        fnstart,        /* line# of start of current fn. */
-        lineno,         /* line# in current file */
-        infunc,         /* "inside function" flag */
-        savestart,      /* copy of fnstart "    " */
-        saveline,       /* copy of lineno  "    " */
-        saveinfn;       /* copy of infunc  "    " */
-
-char   *currfn,         /* ptr to symtab entry for current fn. */
-       *savecurr;       /* copy of currfn for #include */
-char    quote[2];       /* literal string for '"' */
-char    *cptr;          /* work ptr to any char buffer */
-int     *iptr;          /* work ptr to any int buffer */
-
-#else // -----------------------------------------------------------------------
-
-char    symtab[SYMTBSZ];        /* symbol table */
-char    *glbptr;                /* ptrs to next entries */
-long    locidx;
-
-char    wq[WQTABSZ];            /* while queue */
-char    *wqidx;                 /* ptr to next entry */
-
-char    litq[LITABSZ];          /* literal pool */
-char    litidx;                 /* ptr to next entry */
-
-char    macq[MACQSIZE];         /* macro string buffer */
-char    macidx;                 /* and its index */
-
-char    line[LINESIZE];         /* parsing buffer */
-char    mline[LINESIZE];        /* temp macro buffer */
-char    lidx, midx;             /* ptrs into each */
-
-FILE *output;            /* no open units */
-FILE *input;             /* no open units */
-FILE *input2;            /* no open units */
-FILE *saveout;           /* no diverted output */
+char *interpfile = "interp.asm"; /* interpreter asm file to include */
 
 /*      Misc storage    */
 
@@ -136,7 +83,6 @@ char   *currfn,         /* ptr to symtab entry for current fn. */
 char    quote[2];       /* literal string for '"' */
 char    *cptr;          /* work ptr to any char buffer */
 long    *iptr;          /* work ptr to any long buffer */
-#endif
 
 int errCnt = 0;
 
@@ -185,7 +131,6 @@ main(int argc, char *argv[]) {
     ask();                  /* get user options */
     openout();              /* get an output file */
     openin();               /* and initial input file */
-    header();               /* intro code */
 #endif
     header();               /* intro code */
 
@@ -194,12 +139,24 @@ main(int argc, char *argv[]) {
     */
     parse();                /* process ALL input */
 
-    printf(";* ###\n;* ### Dump & trailer\n;* ###\n");
+    printf(";* ###\n;* ### Dumplits\n;* ###\n");
 
     dumplits();             /* then dump literal pool */
+
+    printf(";* ###\n;* ### Dumpglbls\n;* ###\n");
+
     dumpglbs();             /* and all static memory */
+
+    printf(";* ###\n;* ### Trailer\n;* ###\n");
+
     trailer();              /* follow-up code */
+
+    printf(";* ###\n;* ### Closeout\n;* ###\n");
+
     closeout();             /* close the output (if any) */
+
+    printf(";* ###\n;* ### Error summary\n;* ###\n");
+
     errorsummary();         /* summarize errors (on console!) */
 
     printf(";* ###\n;* ### Done\n;* ###\n");
@@ -282,9 +239,14 @@ void
 dumplits() {
     int j,k;
 
-    if (litidx==0) return;      /* if nothing there, exit...*/
+    if (litidx == 0) {
+        printf(";* ### litidx == 0\n");
+        return;      /* if nothing there, exit...*/
+    }
+
     printlabel(litlab);col();   /* print literal label */
     k=0;                        /* init an index... */
+
     while (k<litidx) {          /*      to loop with */
         defbyte();              /* pseudo-op to define byte */
         j=10;                   /* max bytes per line */
@@ -307,9 +269,11 @@ dumpglbs() {
     int j;
 
     if(glbflag==0)return;   /* don't if user said no */
-    cptr=STARTGLB;
-    while(cptr<glbptr) {
-        if(cptr[IDENT]!=FUNCTION) {
+
+    cptr = STARTGLB;
+
+    while(cptr < glbptr) {
+        if(cptr[IDENT] != FUNCTION) {
             /* do if anything but function */
             outstr(cptr);col();
             /* output name as label... */
@@ -321,7 +285,7 @@ dumpglbs() {
             outdec(j);      /* need that many */
             nl();
         }
-        cptr=cptr+SYMSIZ;
+        cptr = cptr + SYMSIZ;
     }
 }
 
@@ -333,15 +297,16 @@ errorsummary() {
     /* see if anything left hanging... */
     if (ncmp) error("missing closing bracket");
     /* open compound statement ... */
-    nl();
-    outstr("There were ");
+    outstr(";*\n");
+    outstr(";* There were ");
     outdec(errcnt); /* total # errors */
-    outstr(" errors in compilation.");
-    nl(); nl();
-    pl("Table Usage:"); nl();
-    outstr("symtab: "); outdec(glbptr-STARTGLB); nl();
-    outstr("litq: "); outdec(litidx); nl();
-    outstr("macq: "); outdec(macidx); nl();
+    outstr(" errors in compilation.\n");
+    outstr(";*");
+    pl(";* Table Usage:\n");
+    outstr(";* symtab: "); outdec(glbptr-STARTGLB); nl();
+    outstr(";* litq: "); outdec(litidx); nl();
+    outstr(";* macq: "); outdec(macidx);
+    outstr("\n;*\n");
 }
 
 /*                                      */
@@ -515,25 +480,28 @@ needsub() {
 void
 newfunc() {
     char n[NAMESIZE];       /* ptr => currfn */
-    if (isSymname(n)==0) {
+
+    if (isSymname(n) == 0) {
         error("illegal function or declaration");
         kill(); /* invalidate line */
         return;
     }
-    fnstart=lineno;         /* remember where fn began */
-    infunc=1;               /* note, in function now. */
-    if(currfn=findglb(n)) {  /* already in symbol table ? */
-        if(currfn[IDENT]!=FUNCTION) {
-            multidef(n); /* already variable by that name */
-        } else if(currfn[OFFSET]==FUNCTION) {
-            multidef(n); /* already function by that name */
+
+    fnstart = lineno;           /* remember where fn began */
+    infunc  = 1;                /* note, in function now. */
+
+    if(currfn = findglb(n)) {   /* already in symbol table ? */
+        if(currfn[IDENT] != FUNCTION) {
+            multidef(n);        /* already variable by that name */
+        } else if(currfn[OFFSET] == FUNCTION) {
+            multidef(n);        /* already function by that name */
         } else {
-            currfn[OFFSET]=FUNCTION; /* otherwise we have what was earlier*/
-            /*  assumed to be a function */
+            currfn[OFFSET] = FUNCTION; /* otherwise we have what was earlier */
+                                       /* assumed to be a function */
         }
     } else {
         /* if not in table, define as a function now */
-        currfn=addglb(n,FUNCTION,CINT,FUNCTION);
+        currfn = addglb(n,FUNCTION,CINT,FUNCTION);
     }
 
     toconsole();
@@ -542,8 +510,10 @@ newfunc() {
 
     /* we had better see open paren for args... */
     if(match("(")==0) error("missing open paren");
+
     outstr(n);col();nl();   /* print function name */
     argstk=0;               /* init arg count */
+
     while(match(")")==0) {   /* then count args */
         /* any legal name bumps arg count */
         if(isSymname(n)) {
@@ -561,8 +531,10 @@ newfunc() {
             if(endst())break;
         }
     }
+
     locidx=STARTLOC;        /* "clear" local symbol table*/
     Zsp=0;                  /* preset stack ptr */
+
     while(argstk) {
         /* now let user declare what types of things */
         /*      those arguments were */
@@ -574,12 +546,14 @@ newfunc() {
             error("wrong number args");break;
         }
     }
+
     if(statement()!=STRETURN) { /* do a statement, but if */
                                 /* it's a return, skip */
                                 /* cleaning up the stack */
         modstk(0);
         zret();
     }
+
     Zsp=0;                  /* reset stack ptr again */
     locidx=STARTLOC;        /* deallocate all locals */
     infunc=0;               /* not in fn. any more   */
@@ -593,6 +567,7 @@ newfunc() {
 void
 getarg(long t) {              /* t = CCHAR or CINT */
     char n[NAMESIZE],c;int j;
+
     while(1) {
         if(argstk==0)
             return;   /* no more args */
@@ -611,11 +586,16 @@ getarg(long t) {              /* t = CCHAR or CINT */
         if(match("[")) { /* pointer ? */
             /* it is a pointer, so skip all */
             /* stuff between "[]" */
-            while(inbyte()!=']')
-                if(endst())break;
+            while(inbyte()!=']') {
+                if(endst()) {
+                    break;
+                }
+            }
+
             j=POINTER;
             /* add entry as pointer */
         }
+
         if((t==CCHAR) && (j!=POINTER))
             addloc(n,j,t,argstk+1);
         else
@@ -624,6 +604,7 @@ getarg(long t) {              /* t = CCHAR or CINT */
 
         if(endst())
             return;
+
         if(match(",")==0)
             error("expected comma");
     }
@@ -694,7 +675,8 @@ compound() {
 /*                                      */
 void
 doif() {
-    int flev,fsp,flab1,flab2;
+    char *flev;
+    int fsp,flab1,flab2;
 
     flev  = locidx;              /* record current local level */
     fsp   = Zsp;                 /* record current stk ptr */
@@ -725,7 +707,7 @@ void
 dowhile() {
     long wql[4];            /* allocate local queue */
 
-    wql[WQSYM]=locidx;      /* record local level */
+    wql[WQSYM]=(long) locidx;      /* record local level */
     wql[WQSP]=Zsp;          /* and stk ptr */
     wql[WQLOOP]=getlabel(); /* and looping label */
     wql[WQLAB]=getlabel();  /* and exit label */
@@ -737,7 +719,7 @@ dowhile() {
     statement();            /* if so, do a statement */
     jump(wql[WQLOOP]);      /* loop to label */
     printlabel(wql[WQLAB]);col();nl(); /* exit label */
-    locidx=wql[WQSYM];      /* deallocate locals */
+    locidx=(char *) wql[WQSYM];      /* deallocate locals */
     Zsp=modstk(wql[WQSP]);  /* clean up stk ptr */
     delwhile();             /* delete queue entry */
 }
@@ -810,37 +792,61 @@ doasm() {
 void
 callfunction(char *ptr) {
     int nargs;
-    nargs=0;
-    blanks();       /* already saw open paren */
-    if(ptr==0)
-        zpush();      /* calling primary register */
 
-    while(streq((char *) line+lidx,")")==0) {
-        if(endst())break;
-        expression();   /* get an argument */
-        if(ptr==0)
-            swapstk(); /* don't push addr */
-        zpush();        /* push argument */
-        nargs=nargs+2;  /* count args*2 */
-        if (match(",")==0)
-            break;
+    nargs = 0;
+    
+    blanks();                   /* already saw open paren */
+
+    if(ptr == 0) {
+        zpush();                /* calling primary register */
     }
+
+    while(streq((char *) line+lidx,")") == 0) {
+        if(endst()) {
+            break;
+        }
+
+        expression();           /* get an argument */
+
+        if(ptr==0) {
+            swapstk();          /* don't push addr */
+        }
+
+        zpush();                /* push argument */
+        nargs = nargs+2;        /* count args*2 */
+
+        if (match(",")==0) {
+            break;
+        }
+    }
+
     needbrack(")");
-    if(ptr)
+
+    if(ptr) {
         zcall(ptr);
-    else
+    } else {
         callstk();
+    }
+
     Zsp=modstk(Zsp+nargs);  /* clean up arguments */
 }
 
 void
 junk() {
     if(an(inbyte())) {
-        while(an(ch()))gch();
-    } else while(an(ch()) == 0) {
-        if(ch()==0)break;
-        gch();
+        while(an(ch())) {
+            gch();
+        }
+    } else {
+        while(an(ch()) == 0) {
+            if(ch()==0) {
+                break;
+            }
+
+            gch();
+        }
     }
+
     blanks();
 }
 
@@ -889,8 +895,7 @@ findglb(char *sname) {
     return (NULL);
 }
 
-//int
-long
+char *
 findloc(char *sname) {
     char *ptr;
 
@@ -903,15 +908,17 @@ findloc(char *sname) {
 
         ptr = ptr+SYMSIZ;
     }
-    return (0);
+    return (NULL);
 }
 
 char *
 addglb(char *sname, char id, char typ, long value) {
     char *ptr;
 
-    if(cptr = findglb(sname))
+    if(cptr = findglb(sname)) {
         return (cptr);
+    }
+
     if(glbptr >= ENDGLB) {
         error("global symbol table overflow");
         return (0);
@@ -946,7 +953,7 @@ addloc(char *sname, char id, char typ, long value) {
         return (0);
     }
 
-    cptr = ptr = (char *) locidx;
+    cptr = ptr = locidx;
 
     // cptr[NAME]  = sname (sorta)
     while(an(*ptr++ = *sname++));   /* copy name */
@@ -1208,7 +1215,7 @@ preprocess() {
                 while(c = sname[k++])
                     keepch(c);
             }
-        } else if(ch() == NULL){
+        } else if(ch() == 0){
             break;
         } else {
             keepch(gch());
@@ -1289,7 +1296,7 @@ nl() {
 
 void
 tab() {
-    outbyte('\t');	
+    outbyte('\t');      
 }
 
 void
@@ -1625,7 +1632,10 @@ header() {
     nl();
 
     if(mainflg) {               /* do stuff needed for first */
-        ol("LIB CCC.H");        /* assembler file */
+        //ol("LIB CCC.H");        /* assembler file */
+        ot("include     ");          /* assembler file */
+        outstr(interpfile);
+        nl();
 
         zcall("main");          /* call the code generated by small-c */
         pseudoins(43); ol("JMP WARMS");
@@ -2152,12 +2162,9 @@ astreq(char str1[], char str2[], int len) {
 
     while (k < len) {
         if ((str1[k]) != (str2[k])) {
-            printf(";* ### (%s) != (%s) [%d]\n", str1, str2, k);
-            printf(";* ### (%x) != (%x) [%d]\n", str1[k], str2[k], k);
-            break;
+            return (0);        /* real mismatch: strings are not equal */
         }
-        if (str1[k] == 0)           break;
-        if (str2[k] == 0)           break;
+        if (str1[k] == 0)           break;     /* both ended here: equal */
         k++;
     }
     return k;

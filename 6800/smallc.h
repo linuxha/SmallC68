@@ -76,9 +76,6 @@ x = symtab[11520] = 500 symbols
 #define STORAGE TYPE+1
 #define OFFSET  STORAGE+1
 
-
-extern struct symbolX;
-
 #else
 
 /*      Define symbol table entry format        */
@@ -152,217 +149,6 @@ extern struct symbolX;
 #define STASM    6
 #define STEXP    7
 
-#ifdef SKIP
-extern void parse();
-extern void dumplits();
-extern void dumpglbs();
-extern void errorsummary();
-extern void ask();
-extern void openout();
-extern void openin();
-extern void doinclude();
-extern void endinclude();
-extern void closeout();
-extern int  needsub();
-extern void newfunc();
-extern void newfile();
-extern int  statement();
-extern void ns();
-extern void compound();
-extern void doif();
-extern void dowhile();
-extern void doreturn();
-extern void dobreak();
-extern void docont();
-extern void doasm();
-extern void callfunction(char *ptr);
-extern void junk();
-extern int  endst();
-extern void illname();
-extern void multidef(char *sname);
-extern void needbrack(char *str);
-extern void needlval();
-extern char *findglb(char *sname);
-extern int  findloc(char *sname);
-
-extern char *addglb(char *sname, char id, char typ, int value);
-extern char *addloc(char *sname, char id, char typ, int value);
-extern int  isSymname(char *sname);
-
-extern int  getlabel();
-extern void printlabel(int label);
-extern void pl(char *str);
-extern int  addwhile(int ptr[]);
-extern void delwhile();
-extern int  readwhile();
-extern void kill();
-extern int  inbyte();
-extern int  inchar();
-extern int  myInline();
-extern int  keepch(char c);
-extern int  preprocess();
-extern int  addmac();
-extern int  putmac(char c);
-extern int  findmac(char *sname);
-extern int  outbyte(char c);
-extern int  outstr(char *ptr);
-extern int  nl();
-extern int  tab();
-extern int  col();
-extern int  bell();
-extern int  error(char ptr[]);
-extern int  ol(char ptr[]);
-extern int  ot(char ptr[]);
-extern int  match(char *lit);
-extern int  amatch(char *lit, int len);
-extern void blanks();
-extern void outdec(int numb);
-extern void expression();
-
-extern int heir1(int lval[]);
-extern int heir2(int lval[]);
-extern int heir3(int lval[]);
-extern int heir4(int lval[]);
-extern int heir5(int lval[]);
-extern int heir6(int lval[]);
-extern int heir7(int lval[]);
-extern int heir8(int lval[]);
-extern int heir9(int lval[]);
-extern int heir10(int lval[]);
-extern int heir11(int *lval);
-
-extern int  primary(int *lval);
-extern void store(int *lval);
-extern void rvalue(int *lval);
-extern void test(int label);
-extern int  constant(int val[]);
-extern int  number(int val[]);
-extern int  pstr(int val[]);
-extern int  qstr(int val[]);
-extern void comment();
-extern void header();
-extern void trailer();
-extern void getmem(char *sym);
-extern void getloc(char *sym);
-extern void putmem(char *sym);
-extern void putstk(char typeobj);
-extern void indirect(char typeobj);
-extern void immed();
-extern void zpush();
-extern void zpop();
-extern void swapstk();
-extern void zcall(char *sname);
-extern void zret();
-extern void callstk();
-extern void jump(int label);
-extern void testjump(int label);
-extern void pseudoins(int k);
-extern void defbyte();
-extern void defstorage();
-extern void defword();
-extern int  modstk(int newsp);
-extern void doublereg();
-extern void zadd();
-extern void zsub();
-extern void mult();
-extern void myDiv();
-extern void zmod();
-extern void zor();
-extern void zxor();
-extern void zand();
-extern void asr();
-extern void asl();
-extern void neg();
-extern void com();
-extern void inc();
-extern void dec();
-
-extern int  alpha(char c);
-extern int  numeric(char c);
-extern int  an(char c);
-extern int  ch();
-extern int  nch();
-extern int  gch();
-extern void toconsole();
-extern void tofile();
-extern int  streq(char str1[], char str2[]);
-extern int  astreq(char str1[], char str2[], int len;);
-
-extern void myAbort();
-extern int  myFclose(FILE *fp);
-extern char *myGets(char *);
-
-extern void declglb(int typ);
-extern void declloc(int typ);
-extern void getarg(int t);
-
-extern void blanks();
-extern void zeq();
-extern void zne();
-extern void zlt();
-extern void zle();
-extern void zgt();
-extern void zge();
-extern void ult();
-extern void ule();
-extern void ugt();
-extern void uge();
-
-extern void doError(int i);
-extern void options(int argc, char **argv);
-
-extern FILE *output;    /* no open units */
-extern FILE *input;     /* no open units */
-extern FILE *input2;    /* no open units */
-extern FILE *saveout;   /* no diverted output */
-
-extern char    symtab[SYMTBSZ];        /* symbol table */
-extern char    *glbptr;                /* ptrs to next entries */
-extern int     locptr;
-
-extern char    wq[WQTABSZ];            /* while queue */
-extern char    *wqidx;                 /* ptr to next entry */
-
-extern char    litq[LITABSZ];          /* literal pool */
-extern char    litidx;                 /* ptr to next entry */
-
-extern char    macq[MACQSIZE];         /* macro string buffer */
-extern char    macidx;                 /* and its index */
-
-extern char    line[LINESIZE];         /* parsing buffer */
-extern char    mline[LINESIZE];        /* temp macro buffer */
-extern char    lidx,midx;              /* ptrs into each */
-
-/*      Misc storage    */
-
-extern int     nxtlab,         /* next avail label # */
-        litlab,         /* label # assigned to literal pool */
-        Zsp,            /* compiler relative stk ptr */
-        argstk,         /* function arg sp */
-        ncmp,           /* # open compound statements */
-        errcnt,         /* # errors in compilation */
-        errstop,        /* stop on error */
-        eof,            /* set non-zero on final input eof */
-        glbflag,        /* non-zero if internal globals */
-        ctext,          /* non-zero to intermix c-source */
-        cmode,          /* non-zero while parsing c-code */
-                        /* zero when passing assembly code */
-        lastst,         /* last executed statement type */
-        mainflg,        /* output is to be first asm file */
-        fnstart,        /* line# of start of current fn. */
-        lineno,         /* line# in current file */
-        infunc,         /* "inside function" flag */
-        savestart,      /* copy of fnstart "    " */
-        saveline,       /* copy of lineno  "    " */
-        saveinfn;       /* copy of infunc  "    " */
-
-extern char   *currfn,         /* ptr to symtab entry for current fn. */
-       *savecurr;       /* copy of currfn for #include */
-extern char    quote[2];       /* literal string for '"' */
-extern char    *cptr;          /* work ptr to any char buffer */
-extern int     *iptr;          /* work ptr to any int buffer */
-
-#else
 extern void parse();
 extern void dumplits();
 extern void dumpglbs();
@@ -393,7 +179,7 @@ extern void multidef(char *sname);
 extern void needbrack(char *str);
 extern void needlval();
 extern char *findglb(char *sname);
-extern long findloc(char *sname);
+extern char *findloc(char *sname);
 
 extern char *addglb(char *sname, char id, char typ, long value);
 extern char *addloc(char *sname, char id, char typ, long value);
@@ -525,13 +311,14 @@ extern FILE *output;    /* no open units */
 extern FILE *input;     /* no open units */
 extern FILE *input2;    /* no open units */
 extern FILE *saveout;   /* no diverted output */
+extern char *interpfile; /* interpreter asm file to include */
 
 extern char    symtab[SYMTBSZ];        /* symbol table */
 extern char    *glbptr;                /* ptrs to next entries */
-extern long    locptr;
+extern char    *locidx;                /* ptr to next local entry */
 
-extern char    wq[WQTABSZ];            /* while queue */
-extern char    *wqidx;                 /* ptr to next entry */
+extern long    wq[WQTABSZ];            /* while queue (4 longs per entry) */
+extern long    *wqidx;                 /* ptr to next entry */
 
 extern char    litq[LITABSZ];          /* literal pool */
 extern char    litidx;                 /* ptr to next entry */
@@ -571,7 +358,6 @@ extern char   *currfn,         /* ptr to symtab entry for current fn. */
 extern char    quote[2];       /* literal string for '"' */
 extern char    *cptr;          /* work ptr to any char buffer */
 extern long    *iptr;          /* work ptr to any long buffer */
-#endif
 
 extern int errCnt;
 

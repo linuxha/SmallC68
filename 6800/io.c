@@ -57,7 +57,11 @@ tofile() {
 void
 closeout() {
     tofile();                   /* if diverted, return to file */
-    if(output) fclose(output);  /* if open, close it */
+    if(output) {
+        if(output != stdout) {
+            fclose(output);     /* if open, close it */
+        }
+    }
     output=0;                   /* mark as closed */
 }
 
